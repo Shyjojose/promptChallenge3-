@@ -49,6 +49,11 @@ We implemented defenses against the OWASP Top 10 vulnerabilities for LLM Applica
 * **Authentication Security & Client-Side Key Exposure:** Securely leverages Google Application Default Credentials (ADC) via `google-auth-library` and strictly routes all traffic through the Node/Express backend reverse proxy to ensure the API credentials are never exposed to the client-side browser network tab.
 * **Model Data Leakage / Sensitive Data Poisoning (LLM07):** PII Masking algorithms automatically strip out and redact sensitive user data (like emails, Social Security Numbers, and Credit Cards) from user chat payloads on the proxy server before they are ever transmitted to the Google Gemini API.
 
+### Implemented Backend Security Layers
+*   [x] **OWASP LLM01 Mitigation:** Implemented explicit string blacklists and strict numeric type validation on input fields to block malicious prompt injections before they reach the model layer.
+*   [x] **OWASP LLM07 Mitigation:** Built custom in-flight PII parsing middleware to automatically redact sensitive strings (emails, SSNs, credit cards) out of incoming payloads.
+*   [x] **OWASP LLM10 Mitigation:** Enforced an explicit IP/Session rate-limiter to systematically drop burst traffic on the 11th request with an HTTP 429 payload.
+
 ---
 
 ## 🧪 Testing
