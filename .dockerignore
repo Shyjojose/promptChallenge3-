@@ -1,0 +1,11 @@
+node_modules
+dist
+.env
+.git
+.gitignore
+README.md
+testing.md
+deployment.md
+__tests__
+*.test.js
+*.test.jsx

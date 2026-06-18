@@ -4,6 +4,13 @@ import rateLimit from 'express-rate-limit';
 import fetch from 'node-fetch';
 import { GoogleAuth } from 'google-auth-library';
 import 'dotenv/config';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ... existing auth and generateResponse code ...
 
 const auth = new GoogleAuth({
   scopes: 'https://www.googleapis.com/auth/cloud-platform'
@@ -180,8 +187,18 @@ app.post('/api/chat', limiter, async (req, res) => {
 });
 
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
-    console.log(`Terra API server running on http://localhost:${PORT}`);
+  // Serve static files from the React build directory
+  const distPath = path.join(__dirname, '../dist');
+  app.use(express.static(distPath));
+
+  // Catch-all route to serve index.html for React Router
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+
+  const port = process.env.PORT || PORT;
+  app.listen(port, () => {
+    console.log(`Terra API server running on port ${port}`);
   });
 }
 
