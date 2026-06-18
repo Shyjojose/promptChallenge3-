@@ -106,6 +106,9 @@ app.use('/api', cors({
 }));
 app.use(express.json());
 
+// Trust the first proxy (Cloud Run) so rate-limiting tracks the correct client IP
+app.set('trust proxy', 1);
+
 const limiter = rateLimit({
   windowMs: 60 * 1000,
   max: 10,
