@@ -1,6 +1,6 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { Stars } from '@react-three/drei'
+import { Stars, useGLTF } from '@react-three/drei'
 import { RigidBody } from '@react-three/rapier'
 import FloatingObject from './FloatingObject'
 
@@ -98,3 +98,8 @@ export default function Scene({ onObjectClick, activeObjectId }) {
     </>
   )
 }
+
+// Preload all GLB assets at module load time to prevent visible pop-in
+OBJECTS
+  .filter(obj => obj.modelPath)
+  .forEach(obj => useGLTF.preload(obj.modelPath))

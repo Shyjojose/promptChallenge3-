@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useGLTF, Html } from '@react-three/drei'
 import { RigidBody } from '@react-three/rapier'
@@ -14,7 +14,7 @@ const FALLBACK_MAT = new THREE.MeshStandardMaterial({ color: '#ff0055' })
 
 function GLBModel({ modelPath, color, baseScale = 1.5 }) {
   const { scene } = useGLTF(modelPath)
-  const clonedScene = scene.clone()
+  const clonedScene = useMemo(() => scene.clone(), [scene])
 
   return <primitive object={clonedScene} scale={baseScale} />
 }

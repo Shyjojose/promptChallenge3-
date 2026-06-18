@@ -3,7 +3,7 @@
 A modern, interactive, AI-powered carbon footprint tracker built with React Three Fiber, Framer Motion, and the Google Gemini API. This application provides a unique 3D zero-gravity experience where users can interact with everyday objects to calculate their carbon emissions and receive friendly, AI-driven eco-advice from "Terra", the animated Earth mascot.
 
 > 🌍 **Live Demo:** [https://terra-tracker-503366840079.us-central1.run.app](https://terra-tracker-503366840079.us-central1.run.app)
-> 
+>
 > 📁 **GitHub Repository:** [https://github.com/Shyjojose/promptChallenge3-](https://github.com/Shyjojose/promptChallenge3-)
 
 ---
@@ -32,9 +32,9 @@ Instead of showing numbers alone, we built an **experience**: a zero-gravity voi
    formula: usage × co2_per_unit_kg (from kb_data.json)
         ↓
 [Express.js Backend Proxy /api/terra]
-   - Validates input (numeric + injection blacklist)
-   - Masks any PII from chat payloads
-   - Applies rate limiting (max 10 req/window)
+   - Validates input (numeric gate first, then regex injection blacklist)
+   - Masks any PII from chat payloads (emails, SSNs, credit cards)
+   - Applies IP-based rate limiting (max 10 req/60s window)
         ↓
 [Google Gemini API (via Vertex AI / AI Studio)]
    - System prompt enforces Terra's persona
@@ -42,8 +42,9 @@ Instead of showing numbers alone, we built an **experience**: a zero-gravity voi
         ↓
 [React UI Updates]
    - Terra mascot swaps image (happy / sweating / thinking)
-   - Speech bubble types out Terra's dialogue
-   - CO2 score and tip are displayed
+   - Speech bubble types out Terra's dialogue (aria-live announced)
+   - CO2 score animates into view with a coloured badge
+   - Chat window opens for follow-up conversation
 ```
 
 ### Knowledge Base (`kb_data.json`)
@@ -55,17 +56,17 @@ The app tracks **12 everyday carbon sources**, each with:
 | Object | CO2 Factor | Unit |
 |---|---|---|
 | Gasoline Car | 0.40 kg | per mile |
+| Zuk Van | 0.50 kg | per mile |
 | Air Conditioner | 0.50 kg | per hour |
 | Beef Burger | 3.00 kg | per serving |
 | Cotton Shirt | 2.10 kg | per item |
-| Laptop | 0.05 kg | per hour |
-| Plastic Bottle | 0.08 kg | per bottle |
-| Coffee Cup | 0.15 kg | per cup |
+| Laptop Computer | 0.05 kg | per hour |
+| Single-Use Plastic Bottle | 0.08 kg | per bottle |
+| Plastic Coffee Cup | 0.15 kg | per cup |
 | Imported Avocado | 0.20 kg | per serving |
-| Rubber Duck | 0.10 kg | per item |
-| Incandescent Bulb | 0.05 kg | per bulb |
-| Cloud Storage | 0.02 kg | per GB |
-| Zuk Van | 0.50 kg | per mile |
+| Plastic Rubber Duck | 0.10 kg | per item |
+| Incandescent Light Bulb | 0.05 kg | per bulb |
+| Digital Footprint (Cloud) | 0.02 kg | per GB |
 
 ---
 
@@ -73,28 +74,29 @@ The app tracks **12 everyday carbon sources**, each with:
 
 ### User Journey (Step-by-Step)
 
-1. **Land on the app** → A dark zero-gravity void loads with 12 everyday objects floating around. Terra (the Earth mascot) greets the user from the corner.
+1. **Land on the app** → A spinning 🌍 loading screen fades into a dark zero-gravity void with 12 everyday objects floating around. Terra (the Earth mascot) greets the user from the bottom-right corner.
 
-2. **Click a 3D object** (e.g., the 🚗 Car) → An input modal slides open, showing a slider or number input labeled *"How many miles do you drive per day?"*.
+2. **Click a 3D object** (e.g., the 🚗 Car) → An accessible input modal (`role="dialog"`) slides open, showing a slider labeled *"How many miles do you drive per day?"*.
 
 3. **Enter usage data** → The frontend immediately computes:
    ```
    CO2 (kg) = daily_usage × co2_per_unit_kg
-   Annual CO2 (kg) = CO2 × 365
    ```
 
 4. **Submit** → The calculated CO2 total, object name, and knowledge base recommendation are packaged into a prompt and sent to `/api/terra` on the Express backend.
 
 5. **Backend processes the request**:
-   - Validates that `user_input` is numeric and free of injection patterns
-   - Constructs a strict system prompt enforcing Terra's persona
-   - Calls the Gemini API
-   - Returns `{ dialogue, emotion_state }` JSON
+   - Runs strict numeric validation first (primary security gate)
+   - Runs case-insensitive regex injection patterns as a secondary check
+   - **Injects Context:** The backend dynamically injects the user's selected object, CO2 score, and `kb_data.json` tip into the system prompt so the chat remains highly relevant and focused.
+   - **Token Budgeting:** Since Gemini 2.5 Flash utilizes internal "thinking tokens", the `maxOutputTokens` limit is explicitly raised to `1024` to prevent premature response truncation mid-sentence.
+   - Calls the Gemini API and returns `{ dialogue, emotion_state }` or raw `{ text }` for chat JSON.
 
 6. **React UI updates**:
    - Terra's image switches to match the `emotion_state` (`happy`, `sweating`, or `thinking`)
-   - The `dialogue` text types out character-by-character in the speech bubble
-   - The CO2 score animates into view with a coloured badge
+   - The `dialogue` text types out character-by-character in the speech bubble (announced via `aria-live`)
+   - The CO2 score animates into view with a colour-coded badge
+   - A context-aware chat window opens with suggested follow-up questions for Terra.
 
 7. **Fallback** → If the Gemini API fails or returns invalid JSON, Terra displays a pre-written fallback message from `kb_data.json` so the UX never breaks.
 
@@ -106,7 +108,7 @@ The app tracks **12 everyday carbon sources**, each with:
 
 2. **Gemini is a conversational wrapper, not a calculator.** All CO2 arithmetic is performed deterministically on the frontend using `kb_data.json`. The LLM's only job is to rephrase the pre-calculated result into encouraging, conversational language. This prevents hallucinated figures.
 
-3. **User inputs represent daily usage.** When a user inputs "50 miles", this is treated as their daily average. Annual impact is extrapolated by multiplying by 365.
+3. **User inputs represent daily usage.** When a user inputs "50 miles", this is treated as their daily average.
 
 4. **No real-time data feeds are used.** The application does not integrate live electricity grid data, live fuel prices, or live weather APIs. It is intentionally designed to be fast, offline-capable (minus the LLM call), and cost-predictable.
 
@@ -118,12 +120,13 @@ The app tracks **12 everyday carbon sources**, each with:
 
 The application is built on a robust, modern stack focusing on maintainability and DRY principles.
 
-* **Frontend:** React, React Three Fiber (R3F), `@react-three/drei`, `@react-three/rapier` (physics), and custom vanilla CSS for styling.
+* **Frontend:** React 18, React Three Fiber (R3F), `@react-three/drei`, `@react-three/rapier` (physics), Framer Motion, and custom vanilla CSS.
 * **Backend:** Express.js Node backend serving as a secure API gateway to the Gemini API.
 * **Design Patterns:**
-  * Strict componentization (e.g., separating `Scene`, `FloatingObject`, and `Mascot`).
-  * Procedural 3D geometries are heavily utilized alongside optimized `.glb` assets.
-  * State management ensures seamless UI/UX transitions between 3D and 2D HTML Overlays.
+  * Strict componentization: `Scene`, `FloatingObject`, `Mascot`, `Modal`, `HUD`, and `ChatWindow` are fully decoupled.
+  * Procedural 3D geometries for key objects (Car, AC, Burger, Laptop) alongside optimized `.glb` assets for the rest.
+  * CO2 total is derived deterministically from a `contributions` map inside a single `setState` call, eliminating stale closure bugs.
+  * All `THREE.js` scene clones are memoized with `useMemo` to prevent re-instantiation on parent re-renders.
 * **Version Control & Repository:** Unnecessary bloat is avoided (total repo size < 10MB) by ignoring `node_modules` and build outputs (`dist`) via strict `.gitignore` rules.
 
 ---
@@ -133,9 +136,10 @@ The application is built on a robust, modern stack focusing on maintainability a
 High-performance 3D rendering in the browser requires strict adherence to WebGL constraints:
 
 * **Anti-Re-render Optimization:** Animations and physics drift are handled imperatively within R3F's `useFrame` via `useRef`, explicitly avoiding React `useState` re-renders that would crash the 60fps loop.
-* **Memory Leak Prevention:** All `THREE.Geometry` and `THREE.Material` instances are either declared declaratively using JSX elements or cached/memoized outside of the component body. The application does not instantiate new `THREE` objects in the render loop.
+* **Memory Leak Prevention:** All `THREE.Geometry` and `THREE.Material` instances are either declared declaratively using JSX elements or memoized (`useMemo`) outside the render loop. The application does not instantiate new `THREE` objects per frame.
 * **Frame-Rate Independence:** All animations use `delta` time provided by `useFrame` to ensure consistent physics simulation speed across different monitor refresh rates (60Hz vs 120Hz).
-* **Asset Optimization:** External 3D models were aggressively optimized and shrunk to ensure rapid load times.
+* **Asset Preloading:** All GLB 3D model paths are preloaded via `useGLTF.preload()` at module initialization time, eliminating visible pop-in as the scene initializes.
+* **Loading Experience:** A smooth animated overlay (spinning 🌍 with fade-out) is displayed while the WebGL context and physics engine initialize, preventing a jarring blank-screen first impression.
 
 ---
 
@@ -143,16 +147,17 @@ High-performance 3D rendering in the browser requires strict adherence to WebGL 
 
 We implemented defenses against the OWASP Top 10 vulnerabilities for LLM Applications:
 
-* **Prompt Injection Defense:** Strict numerical and categorical input validation (`isNaN(Number(user_input))`) enforces boundaries before hitting the Gemini API, preventing users from hijacking the AI's persona.
-* **XSS Sanitization:** The React UI treats all LLM output as untrusted data, safely rendering it as strings without `dangerouslySetInnerHTML`.
-* **Rate Limiting:** The Express backend implements IP-based rate limiting using `express-rate-limit` to prevent "Denial of Wallet" attacks (unbounded consumption) and API abuse.
-* **Authentication Security & Client-Side Key Exposure:** Securely leverages Google Application Default Credentials (ADC) via `google-auth-library` and strictly routes all traffic through the Node/Express backend reverse proxy to ensure the API credentials are never exposed to the client-side browser network tab.
-* **Model Data Leakage / Sensitive Data Poisoning (LLM07):** PII Masking algorithms automatically strip out and redact sensitive user data (like emails, Social Security Numbers, and Credit Cards) from user chat payloads on the proxy server before they are ever transmitted to the Google Gemini API.
+* **Prompt Injection Defense (LLM01):** A two-layer defense system: (1) strict numeric type validation as the primary gate (`isNaN(Number(user_input))`), (2) case-insensitive regex pattern matching as a secondary check to catch jailbreak variations like `IGNORE ALL INSTRUCTIONS`, `JaIlBrEaK`, etc.
+* **XSS Sanitization:** The React UI treats all LLM output as untrusted data, safely rendering it as text strings without `dangerouslySetInnerHTML`.
+* **Rate Limiting (LLM10):** The Express backend implements IP-based rate limiting using `express-rate-limit` — dropping the 11th request in a 60-second window with HTTP 429, preventing "Denial of Wallet" attacks.
+* **Authentication Security:** Securely leverages Google Application Default Credentials (ADC) via `google-auth-library` in production (Vertex AI) with API key fallback for development (AI Studio). All traffic routes through the Node/Express backend reverse proxy — API credentials are **never** exposed to the client-side browser.
+* **PII Masking (LLM07):** Custom middleware automatically redacts emails, Social Security Numbers, and credit card numbers from user chat payloads before they are transmitted to the Gemini API.
+* **CORS Hardening:** The `cors` middleware reads `FRONTEND_URL` from environment variables, supporting both local development (`localhost:5173`) and production Cloud Run deployments without hardcoded origins.
 
 ### Implemented Backend Security Layers
-*   [x] **OWASP LLM01 Mitigation:** Implemented explicit string blacklists and strict numeric type validation on input fields to block malicious prompt injections before they reach the model layer.
-*   [x] **OWASP LLM07 Mitigation:** Built custom in-flight PII parsing middleware to automatically redact sensitive strings (emails, SSNs, credit cards) out of incoming payloads.
-*   [x] **OWASP LLM10 Mitigation:** Enforced an explicit IP/Session rate-limiter to systematically drop burst traffic on the 11th request with an HTTP 429 payload.
+* [x] **OWASP LLM01 Mitigation:** Numeric type validation + case-insensitive regex injection blacklist (catches typo/case variations).
+* [x] **OWASP LLM07 Mitigation:** In-flight PII parsing middleware (emails, SSNs, credit cards redacted before Gemini call).
+* [x] **OWASP LLM10 Mitigation:** IP/Session rate-limiter drops burst traffic on the 11th request with HTTP 429.
 
 ---
 
@@ -161,20 +166,36 @@ We implemented defenses against the OWASP Top 10 vulnerabilities for LLM Applica
 A robust three-tier testing strategy guarantees code reliability:
 
 1. **3D Component Testing (Vitest & React Three Test Renderer):**
-   Headless rendering verifies that 3D meshes exist, tests for frame-rate independence, ensures imperative animations do not trigger React state, and validates that geometries do not leak memory via UUID tracking.
+   Headless rendering verifies that 3D meshes exist, tests for frame-rate independence (scale advances further with larger `delta`), ensures imperative animations do not trigger React state re-renders, and validates that geometries do not leak memory across re-renders via UUID tracking.
+
 2. **2D & Security Testing (Vitest & Supertest):**
-   Verifies Mascot state transitions, ensures safe XSS handling, tests Express backend prompt-injection defenses, and enforces rate limits with strict HTTP 400/429 assertions.
+   Verifies Mascot state transitions (happy → sweating on high CO2), ensures safe XSS handling (no `<script>` DOM injection), tests Express backend prompt-injection defenses (HTTP 400 on malicious input), and enforces rate limits with strict HTTP 429 assertions.
+
 3. **End-to-End Visual Testing (Playwright):**
    Automated browser tests ensure the WebGL canvas mounts, physics engines apply drift successfully, and simulated click interactions properly trigger the DOM modals.
+
+### Running Tests
+```bash
+# Unit & Security Tests
+npm run test
+
+# Playwright E2E Tests
+npm run test:e2e
+```
 
 ---
 
 ## ♿ Accessibility (A11y)
 
-* **Contrast:** High contrast ratios are maintained between the dark void background and neon floating labels.
-* **Keyboard Navigation & Screen Readers:** The HTML DOM overlays (the modal, form inputs, and buttons) are fully navigable via keyboard (`Tab`, `Enter`).
-* **ARIA Attributes:** ARIA labels (`aria-label`, `aria-hidden`) are utilized on buttons, modals, and the Mascot image to provide meaningful context to assistive technologies.
-* **Reduced Motion:** While the application centers around a zero-gravity physics engine, physics logic can be bounded and interactive elements scale gracefully to avoid disorienting motion.
+Full ARIA compliance is implemented across all interactive components:
+
+* **Modal Dialog:** `role="dialog"`, `aria-modal="true"`, and `aria-labelledby` linking to the object's title heading — enabling screen readers to correctly announce the modal context.
+* **HUD Score Badge:** `role="button"`, `aria-expanded` (reflects collapse/expand state), and `onKeyDown` Enter key support for full keyboard navigation.
+* **Chat Window:** Close button has `aria-label="Close Terra chat"`. The message list uses `role="log"` and `aria-live="polite"` so new messages are announced. The input field has `aria-label="Message to Terra"` (not just a placeholder).
+* **Mascot Speech Bubble:** Wrapped in `aria-live="polite"` and `aria-atomic="true"` so every new Terra dialogue is announced to screen readers as it appears.
+* **Mascot Image:** Descriptive `alt` text includes both the mascot name and current emotional state (e.g., `"Terra the Earth mascot, sweating"`).
+* **Contrast:** High contrast ratios are maintained between the dark void background and neon labels/text elements.
+* **Keyboard Navigation:** All interactive overlays (modal, form inputs, buttons, HUD) are fully navigable via `Tab` and `Enter`.
 
 ---
 
@@ -194,7 +215,8 @@ A robust three-tier testing strategy guarantees code reliability:
 2. Setup your local environment variables in `.env`:
    ```env
    GOOGLE_CLOUD_PROJECT="your-project-id"
-   GEMINI_API_KEY="your-api-key"   # Optional: use instead of ADC
+   GEMINI_API_KEY="your-api-key"      # Optional: use instead of ADC
+   FRONTEND_URL="http://localhost:5173" # For CORS in development
    ```
 3. Authenticate locally with Google Cloud (ADC):
    ```bash
@@ -211,10 +233,7 @@ A robust three-tier testing strategy guarantees code reliability:
    ```bash
    npm run dev
    ```
-
-### Running Tests
-* Run Unit & Security Tests: `npm run test`
-* Run Playwright E2E Tests: `npm run test:e2e`
+   The app will be available at `http://localhost:5173` (or the next available port).
 
 ### Cloud Deployment (Google Cloud Run)
 ```bash
@@ -222,6 +241,38 @@ gcloud run deploy terra-tracker \
   --source . \
   --region us-central1 \
   --allow-unauthenticated \
-  --set-env-vars=NODE_ENV=production \
+  --set-env-vars=NODE_ENV=production,FRONTEND_URL=https://terra-tracker-503366840079.us-central1.run.app \
   --project=your-project-id
+```
+
+---
+
+## 📦 Project Structure
+
+```
+.
+├── server/
+│   ├── index.js          # Express API (CORS, rate limiting, PII masking, Gemini proxy)
+│   └── server.test.js    # Supertest security & rate-limit tests
+├── src/
+│   ├── components/
+│   │   ├── Scene.jsx         # R3F scene (stars, lights, physics walls, GLB preloading)
+│   │   ├── FloatingObject.jsx # Per-object physics + hover/click interactions (memoized)
+│   │   ├── Modal.jsx          # Accessible input modal (role="dialog")
+│   │   ├── Mascot.jsx         # Terra mascot + aria-live speech bubble
+│   │   ├── HUD.jsx            # CO2 score panel with accessible keyboard toggle
+│   │   ├── ChatWindow.jsx     # Follow-up chat with Terra (role="log", aria-live)
+│   │   ├── ProceduralCar.jsx  # Procedural THREE.js Car geometry
+│   │   ├── ProceduralAC.jsx   # Procedural AC unit geometry
+│   │   ├── ProceduralBurger.jsx
+│   │   └── ProceduralLaptop.jsx
+│   ├── data/
+│   │   └── kb_data.json      # Knowledge base: 12 carbon sources
+│   ├── App.jsx               # Root component + state management
+│   └── index.css             # Global styles + CSS design tokens
+├── public/
+│   └── images/               # Terra mascot WebP assets (happy/sweating/thinking)
+├── Dockerfile                # Production container
+├── index.html                # Entry HTML with OG/Twitter meta tags
+└── playwright.config.js      # E2E test config
 ```

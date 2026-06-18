@@ -7,7 +7,7 @@ const CO2_COLOR = (kg) => {
   return '#ff4d6d'
 }
 
-export default function HUD({ totalCO2, contributions }) {
+export default function HUD({ totalCO2, contributions, kbData }) {
   const [expanded, setExpanded] = useState(false)
   const color = CO2_COLOR(totalCO2)
   const hasData = Object.keys(contributions).length > 0
@@ -30,8 +30,13 @@ export default function HUD({ totalCO2, contributions }) {
       {/* Main score badge */}
       <div
         className="glass"
+        role={hasData ? 'button' : undefined}
+        tabIndex={hasData ? 0 : -1}
+        aria-expanded={hasData ? expanded : undefined}
+        aria-label="Toggle CO₂ breakdown"
         style={{ padding: '16px 20px', cursor: hasData ? 'pointer' : 'default' }}
         onClick={() => hasData && setExpanded(v => !v)}
+        onKeyDown={(e) => e.key === 'Enter' && hasData && setExpanded(v => !v)}
       >
         <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.12em', color: '#7ea8d4', textTransform: 'uppercase', marginBottom: '4px' }}>
           Total CO₂ Footprint
@@ -83,7 +88,7 @@ export default function HUD({ totalCO2, contributions }) {
             </div>
             {Object.entries(contributions).map(([id, kg]) => (
               <div key={id} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '13px' }}>
-                <span style={{ color: '#c8e0f4', textTransform: 'capitalize' }}>{id.replace('_', ' ')}</span>
+                <span style={{ color: '#c8e0f4' }}>{kbData?.[id]?.name || id.replace(/_/g, ' ')}</span>
                 <span style={{ color: CO2_COLOR(kg), fontWeight: 600 }}>{kg.toFixed(2)} kg</span>
               </div>
             ))}

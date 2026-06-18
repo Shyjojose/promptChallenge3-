@@ -76,6 +76,9 @@ export default function Modal({ object, onClose, onSubmit, setMascotState }) {
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
           transition={{ duration: 0.3, ease: [0.34, 1.56, 0.64, 1] }}
           className="glass"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-object-title"
           style={{ width: '420px', padding: '32px', position: 'relative' }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -92,7 +95,7 @@ export default function Modal({ object, onClose, onSubmit, setMascotState }) {
             ✕
           </button>
 
-          <h2 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '4px', fontFamily: 'Space Grotesk, sans-serif' }}>
+          <h2 id="modal-object-title" style={{ fontSize: '22px', fontWeight: 700, marginBottom: '4px', fontFamily: 'Space Grotesk, sans-serif' }}>
             {object.name}
           </h2>
           <p style={{ fontSize: '13px', color: '#7ea8d4', marginBottom: '28px' }}>

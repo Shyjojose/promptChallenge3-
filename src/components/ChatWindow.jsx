@@ -1,22 +1,39 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const SUGGESTED_QUESTIONS = [
+  'How can I reduce this?',
+  'What does this equal in trees?',
+  'Give me a quick eco tip',
+  'How does this compare to average?',
+];
+
 export default function ChatWindow({ onClose, initialContext }) {
+  const co2Label = initialContext.co2_amount != null
+    ? ` (${initialContext.co2_amount} kg CO₂/day)`
+    : '';
+
   const [messages, setMessages] = useState([
-    { role: 'model', text: initialContext.initialMessage || `Hi there! Let's talk about the ${initialContext.object_name} you're using.` }
+    {
+      role: 'model',
+      text: initialContext.initialMessage ||
+        `Hi! I'm Terra 🌍 Let's talk about your ${initialContext.object_name}${co2Label}. Ask me anything about reducing your impact!`
+    }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [suggestionsVisible, setSuggestionsVisible] = useState(true);
   const endOfMessagesRef = useRef(null);
 
   useEffect(() => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = async () => {
-    if (!input.trim() || loading) return;
+  const sendMessage = async (text) => {
+    if (!text.trim() || loading) return;
 
-    const userMessage = { role: 'user', text: input.trim() };
+    setSuggestionsVisible(false);
+    const userMessage = { role: 'user', text: text.trim() };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setInput('');
@@ -26,7 +43,15 @@ export default function ChatWindow({ onClose, initialContext }) {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages })
+        body: JSON.stringify({
+          messages: newMessages,
+          // Pass carbon context so server builds a relevant system prompt
+          context: {
+            object_name: initialContext.object_name,
+            co2_amount: initialContext.co2_amount,
+            recommendation: initialContext.recommendation,
+          }
+        })
       });
       if (!res.ok) throw new Error('API Error');
       const data = await res.json();
@@ -34,11 +59,14 @@ export default function ChatWindow({ onClose, initialContext }) {
         setMessages(prev => [...prev, { role: 'model', text: data.text }]);
       }
     } catch (err) {
-      setMessages(prev => [...prev, { role: 'model', text: 'Sorry, I am having trouble connecting right now.' }]);
+      setMessages(prev => [...prev, { role: 'model', text: 'Sorry, my connection is fuzzy right now. Try again in a moment! 🌍' }]);
     } finally {
       setLoading(false);
     }
   };
+
+  const handleSend = () => sendMessage(input);
+  const handleSuggestion = (q) => sendMessage(q);
 
   return (
     <motion.div
@@ -77,6 +105,7 @@ export default function ChatWindow({ onClose, initialContext }) {
         </h3>
         <button
           onClick={onClose}
+          aria-label="Close Terra chat"
           style={{
             background: 'none',
             border: 'none',
@@ -91,30 +120,77 @@ export default function ChatWindow({ onClose, initialContext }) {
       </div>
 
       {/* Messages */}
-      <div style={{
-        flex: 1,
-        overflowY: 'auto',
-        padding: '16px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px'
-      }}>
+      <div
+        role="log"
+        aria-label="Conversation with Terra"
+        aria-live="polite"
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px'
+        }}
+      >
         {messages.map((msg, idx) => (
-          <div key={idx} style={{
-            alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-            maxWidth: '85%',
-            background: msg.role === 'user' ? 'rgba(0, 212, 255, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-            border: msg.role === 'user' ? '1px solid rgba(0, 212, 255, 0.4)' : '1px solid rgba(255, 255, 255, 0.1)',
-            padding: '10px 14px',
-            borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-            color: '#e8f4ff',
-            fontSize: '14px',
-            fontFamily: 'Space Grotesk, sans-serif',
-            lineHeight: 1.4
-          }}>
+          <motion.div
+            key={idx}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{
+              alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+              maxWidth: '85%',
+              background: msg.role === 'user' ? 'rgba(0, 212, 255, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+              border: msg.role === 'user' ? '1px solid rgba(0, 212, 255, 0.4)' : '1px solid rgba(255, 255, 255, 0.1)',
+              padding: '10px 14px',
+              borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+              color: '#e8f4ff',
+              fontSize: '14px',
+              fontFamily: 'Space Grotesk, sans-serif',
+              lineHeight: 1.4
+            }}
+          >
             {msg.text}
-          </div>
+          </motion.div>
         ))}
+
+        {/* Suggested question chips — shown only before user sends first message */}
+        <AnimatePresence>
+          {suggestionsVisible && !loading && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignSelf: 'flex-start', width: '100%' }}
+            >
+              {SUGGESTED_QUESTIONS.map((q) => (
+                <button
+                  key={q}
+                  onClick={() => handleSuggestion(q)}
+                  style={{
+                    background: 'rgba(0, 212, 255, 0.08)',
+                    border: '1px solid rgba(0, 212, 255, 0.25)',
+                    borderRadius: '20px',
+                    padding: '6px 12px',
+                    color: '#00d4ff',
+                    fontSize: '12px',
+                    fontFamily: 'Space Grotesk, sans-serif',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'background 0.15s',
+                  }}
+                  onMouseOver={e => e.currentTarget.style.background = 'rgba(0,212,255,0.18)'}
+                  onMouseOut={e => e.currentTarget.style.background = 'rgba(0,212,255,0.08)'}
+                >
+                  💬 {q}
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {loading && (
           <div style={{
             alignSelf: 'flex-start',
@@ -122,11 +198,12 @@ export default function ChatWindow({ onClose, initialContext }) {
             fontSize: '13px',
             fontFamily: 'Space Grotesk, sans-serif'
           }}>
-            Terra is typing...
+            Terra is thinking... 🌍
           </div>
         )}
         <div ref={endOfMessagesRef} />
       </div>
+
 
       {/* Input */}
       <div style={{
@@ -141,6 +218,7 @@ export default function ChatWindow({ onClose, initialContext }) {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
           placeholder="Ask Terra..."
+          aria-label="Message to Terra"
           style={{
             flex: 1,
             background: 'rgba(255, 255, 255, 0.05)',

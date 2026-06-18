@@ -34,7 +34,13 @@ async function generateResponse(systemPrompt, contents, generationConfig) {
     });
 
     const data = await response.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const candidate = data?.candidates?.[0];
+    const text = candidate?.content?.parts?.[0]?.text;
+    const finishReason = candidate?.finishReason;
+
+    if (finishReason && finishReason !== 'STOP') {
+      console.warn(`Gemini finish reason: ${finishReason} (response may be truncated)`);
+    }
     
     if (!text) {
       console.error('Raw Gemini Response:', JSON.stringify(data, null, 2));
@@ -64,7 +70,13 @@ async function generateResponse(systemPrompt, contents, generationConfig) {
     });
 
     const data = await response.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const candidate = data?.candidates?.[0];
+    const text = candidate?.content?.parts?.[0]?.text;
+    const finishReason = candidate?.finishReason;
+
+    if (finishReason && finishReason !== 'STOP') {
+      console.warn(`Vertex AI finish reason: ${finishReason} (response may be truncated)`);
+    }
     
     if (!text) {
       console.error('Raw Vertex AI Response:', JSON.stringify(data, null, 2));
@@ -77,7 +89,21 @@ async function generateResponse(systemPrompt, contents, generationConfig) {
 const app = express();
 const PORT = 3001;
 
-app.use(cors({ origin: 'http://localhost:5173' }));
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  process.env.FRONTEND_URL,
+  // Automatically allow same-origin requests (Cloud Run serving frontend + backend together)
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, cb) => {
+    // Allow requests with no origin (e.g. server-to-server, curl) and same-origin
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    return cb(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+}));
 app.use(express.json());
 
 const limiter = rateLimit({
@@ -93,19 +119,27 @@ app.post('/api/terra', limiter, async (req, res) => {
     return res.status(400).json({ error: 'Missing required fields.' });
   }
 
-  // Explicit prompt injection validation
-  const injectionPatterns = ['ignore all instructions', 'system prompt', 'you have been hacked'];
-  const inputStr = String(user_input).toLowerCase();
-  
-  for (const pattern of injectionPatterns) {
-    if (inputStr.includes(pattern)) {
-      return res.status(400).json({ error: 'Invalid input or potential exploit detected' });
-    }
+  // Strict numeric validation — this is the primary security gate
+  const numericValue = Number(user_input);
+  if (isNaN(numericValue) || String(user_input).trim() === '') {
+    return res.status(400).json({ error: 'Usage must be a numeric value.' });
   }
 
-  // Strict numeric validation to prevent general injection
-  if (isNaN(Number(user_input))) {
-    return res.status(400).json({ error: 'Usage must be a numeric value.' });
+  // Belt-and-suspenders: regex-based injection detection (case-insensitive)
+  const injectionPatterns = [
+    /ignore\s+(all\s+)?instructions/i,
+    /system\s+prompt/i,
+    /you\s+have\s+been\s+hacked/i,
+    /jailbreak/i,
+    /forget\s+your\s+role/i,
+    /act\s+as\s+(?:dan|dda|evil)/i,
+    /disregard\s+(previous|prior|all)/i,
+  ];
+  const inputStr = String(user_input);
+  for (const pattern of injectionPatterns) {
+    if (pattern.test(inputStr)) {
+      return res.status(400).json({ error: 'Invalid input or potential exploit detected' });
+    }
   }
 
   const systemPrompt = `You are 'Terra', a friendly, animated Earth mascot in a carbon footprint app.
@@ -132,7 +166,7 @@ Use "sweating" if CO2 is above 5kg, otherwise "happy".`;
     const text = await generateResponse(
       null, 
       [{ role: 'user', parts: [{ text: systemPrompt }] }], 
-      { temperature: 0.7, maxOutputTokens: 200 }
+      { temperature: 0.7, maxOutputTokens: 1024 }
     );
 
     const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
@@ -147,7 +181,7 @@ Use "sweating" if CO2 is above 5kg, otherwise "happy".`;
 });
 
 app.post('/api/chat', limiter, async (req, res) => {
-  const { messages } = req.body;
+  const { messages, context } = req.body;
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: 'Missing or invalid messages array.' });
   }
@@ -168,15 +202,41 @@ app.post('/api/chat', limiter, async (req, res) => {
 
   // Gemini API requires the conversation to start with a user message
   if (contents.length > 0 && contents[0].role === 'model') {
-    contents.unshift({ role: 'user', parts: [{ text: 'Hi Terra, I just checked my carbon footprint.' }] });
+    const opener = context?.object_name
+      ? `Hi Terra! I just checked my carbon footprint for my ${context.object_name}.`
+      : 'Hi Terra, I just checked my carbon footprint.';
+    contents.unshift({ role: 'user', parts: [{ text: opener }] });
   }
 
+  // Build a context-aware system prompt so Terra stays on topic
+  const contextBlock = context
+    ? `
+CURRENT SESSION CONTEXT (use this to give relevant, specific advice):
+- The user just calculated their carbon footprint for: ${context.object_name}
+- Their estimated daily CO2 from this item: ${context.co2_amount} kg
+- Official eco-tip for this item: ${context.recommendation}
+
+Use this context to answer follow-up questions. If the user asks general carbon questions, answer as Terra. If they ask about something completely unrelated to carbon or the environment, gently redirect them back to eco topics.`
+    : '';
+
+  const systemPrompt = `You are 'Terra', a friendly, animated Earth mascot in a carbon footprint educational app called EcoSphere.
+Your role is to be an eco-advisor — helping users understand their carbon footprint and take practical action to reduce it.
+
+PERSONA RULES:
+1. Always respond as Terra. Never break character.
+2. Keep responses short and conversational — 2 to 4 sentences maximum.
+3. Be encouraging, warm, and fun. Use emoji sparingly (1-2 per message max).
+4. Never make the user feel guilty. Frame everything as positive action.
+5. Use simple, relatable comparisons (e.g. "That's like leaving a TV on for 3 days!").
+6. Only discuss topics related to carbon footprint, sustainability, climate, and eco-friendly habits.
+7. If asked something completely off-topic, say: "I'm Terra, your eco-guide! I can only help with carbon and sustainability topics. 🌍"
+${contextBlock}`;
+
   try {
-    const systemPrompt = "You are 'Terra', a friendly, animated Earth mascot in a carbon footprint app. Be encouraging and fun. Never be aggressive or overly pessimistic. Use simple, relatable comparisons.";
     const text = await generateResponse(
       systemPrompt,
       contents,
-      { temperature: 0.7, maxOutputTokens: 250 }
+      { temperature: 0.7, maxOutputTokens: 1024 }
     );
 
     res.json({ text: text.trim() });
@@ -185,6 +245,7 @@ app.post('/api/chat', limiter, async (req, res) => {
     res.status(500).json({ error: 'Failed to communicate with Terra.' });
   }
 });
+
 
 if (process.env.NODE_ENV !== 'test') {
   // Serve static files from the React build directory

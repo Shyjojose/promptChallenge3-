@@ -43,51 +43,53 @@ export default function Mascot({ emotion, dialogue, onDismiss }) {
       zIndex: 100,
       pointerEvents: 'none',
     }}>
-      {/* Speech bubble */}
-      <AnimatePresence>
-        {dialogue && (
-          <motion.div
-            key={dialogue}
-            initial={{ opacity: 0, y: 20, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-            style={{
-              maxWidth: '280px',
-              background: 'rgba(3, 5, 15, 0.92)',
-              border: '1px solid rgba(0, 212, 255, 0.3)',
-              borderRadius: '16px 16px 4px 16px',
-              padding: '14px 16px',
-              color: '#e8f4ff',
-              fontFamily: 'Space Grotesk, sans-serif',
-              fontSize: '14px',
-              lineHeight: '1.5',
-              backdropFilter: 'blur(20px)',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 20px rgba(0,212,255,0.1)',
-              pointerEvents: 'all',
-            }}
-          >
-            <TypewriterText text={dialogue} />
-            <button
-              onClick={onDismiss}
+      {/* Speech bubble — aria-live so screen readers announce new dialogue */}
+      <div aria-live="polite" aria-atomic="true">
+        <AnimatePresence>
+          {dialogue && (
+            <motion.div
+              key={dialogue}
+              initial={{ opacity: 0, y: 20, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
               style={{
-                display: 'block',
-                marginTop: '8px',
-                background: 'transparent',
-                border: '1px solid rgba(0,212,255,0.4)',
-                borderRadius: '6px',
-                color: '#00d4ff',
-                fontSize: '12px',
-                padding: '3px 10px',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
+                maxWidth: '280px',
+                background: 'rgba(3, 5, 15, 0.92)',
+                border: '1px solid rgba(0, 212, 255, 0.3)',
+                borderRadius: '16px 16px 4px 16px',
+                padding: '14px 16px',
+                color: '#e8f4ff',
+                fontFamily: 'Space Grotesk, sans-serif',
+                fontSize: '14px',
+                lineHeight: '1.5',
+                backdropFilter: 'blur(20px)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 20px rgba(0,212,255,0.1)',
+                pointerEvents: 'all',
               }}
             >
-              Got it ✓
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <TypewriterText text={dialogue} />
+              <button
+                onClick={onDismiss}
+                style={{
+                  display: 'block',
+                  marginTop: '8px',
+                  background: 'transparent',
+                  border: '1px solid rgba(0,212,255,0.4)',
+                  borderRadius: '6px',
+                  color: '#00d4ff',
+                  fontSize: '12px',
+                  padding: '3px 10px',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
+              >
+                Got it ✓
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Mascot avatar */}
       <motion.div
