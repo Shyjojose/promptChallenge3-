@@ -1,5 +1,10 @@
 # Cloud Run Deployment Guide
 
+## 🌍 Live URL
+**https://terra-tracker-503366840079.us-central1.run.app**
+
+Deployed to Google Cloud Run (`us-central1`) — Project `promptchallenge-499808`
+
 This guide explains how to package the Terra Carbon Tracker into a single, production-ready Docker container and deploy it to Google Cloud Run under your project `promptchallenge-499808`.
 
 ## 1. Why Cloud Run?
