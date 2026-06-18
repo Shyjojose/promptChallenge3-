@@ -1,4 +1,16 @@
-import request from 'supertest';
+import re
+
+with open('server/server.test.js', 'r') as f:
+    content = f.read()
+
+# Replace everything after 'Test Case 8' starts up to the end
+match = re.search(r"it\('Test Case 8: Rate Limiting Enforcement', async \(\) => \{.*?(?=\n  it\('Test Case 12)", content, re.DOTALL)
+
+if match:
+    pass
+
+# Let's just rewrite the end of the file correctly
+fixed = """import request from 'supertest';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import fetch from 'node-fetch';
 import app from './index.js';
@@ -72,3 +84,6 @@ describe('Security & LLM Tests (Backend/API)', () => {
     expect(lastStatus).toBe(429);
   });
 });
+"""
+with open('server/server.test.js', 'w') as f:
+    f.write(fixed)

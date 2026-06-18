@@ -47,6 +47,10 @@ Integrating the Gemini API and agentic behavior introduces specific risks outlin
 *   **Risk:** If the React/R3F frontend talks directly to Gemini, your private API key (or Application Default Credentials) will be leaked to the public internet instantly. Users could extract your API key from the browser's Network tab, steal your credits, and use your key for their own projects.
 *   **Mitigation:** **Strict Architecture Rule:** The React frontend must *never* call the Gemini API directly. All requests must route through the backend Express server (acting as a reverse proxy). The backend securely holds the API key as an environment variable (`process.env.GEMINI_API_KEY`) or uses Google Application Default Credentials, and communicates with Google.
 
+### F. Model Data Leakage / Sensitive Data Poisoning (LLM07)
+*   **Risk:** Users submitting proprietary source code, personal identifiable information (PII), or challenge-specific data into the prompt, which might get logged or inadvertently used by the model provider.
+*   **Mitigation:** Strip out or mask sensitive strings/PII (like emails, SSNs, credit cards) on the backend proxy server before sending payloads to the Gemini API.
+
 ---
 
 ## 3. Concrete Test Cases for Validation

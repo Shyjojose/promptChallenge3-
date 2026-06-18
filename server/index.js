@@ -135,10 +135,18 @@ app.post('/api/chat', limiter, async (req, res) => {
     return res.status(400).json({ error: 'Missing or invalid messages array.' });
   }
 
-  // Map messages to Gemini API format
+  // Basic PII masking to prevent Model Data Leakage (LLM07)
+  const maskPII = (text) => {
+    return text
+      .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[EMAIL REDACTED]')
+      .replace(/\b(?:\d[ -]*?){13,16}\b/g, '[CREDIT CARD REDACTED]')
+      .replace(/\b\d{3}[-.]?\d{2}[-.]?\d{4}\b/g, '[SSN REDACTED]');
+  };
+
+  // Map messages to Gemini API format and mask PII
   const contents = messages.map(msg => ({
     role: msg.role === 'user' ? 'user' : 'model',
-    parts: [{ text: msg.text }]
+    parts: [{ text: maskPII(msg.text) }]
   }));
 
   // Gemini API requires the conversation to start with a user message
