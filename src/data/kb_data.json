@@ -1,0 +1,74 @@
+{
+  "ac_unit": {
+    "name": "Air Conditioner",
+    "unit": "hours",
+    "co2_per_unit_kg": 0.5,
+    "recommendation": "Set the thermostat 2 degrees higher to save up to 10% on energy and cooling emissions."
+  },
+  "car": {
+    "name": "Gasoline Car",
+    "unit": "miles",
+    "co2_per_unit_kg": 0.4,
+    "recommendation": "Consider carpooling or taking public transit twice a week to drastically reduce your transport footprint."
+  },
+  "zuk": {
+    "name": "Zuk Van",
+    "unit": "miles",
+    "co2_per_unit_kg": 0.5,
+    "recommendation": "Consider upgrading your classic van to an electric vehicle, or maintain the engine for better fuel efficiency."
+  },
+  "burger": {
+    "name": "Beef Burger",
+    "unit": "servings",
+    "co2_per_unit_kg": 3.0,
+    "recommendation": "Swap one beef meal a week for a plant-based alternative to cut dietary emissions."
+  },
+  "avocado": {
+    "name": "Imported Avocado",
+    "unit": "servings",
+    "co2_per_unit_kg": 0.2,
+    "recommendation": "Try to buy locally sourced produce when in season to reduce air-freight and transport emissions."
+  },
+  "duck": {
+    "name": "Plastic Rubber Duck",
+    "unit": "items",
+    "co2_per_unit_kg": 0.1,
+    "recommendation": "Support brands that make toys and products from recycled ocean plastics or biodegradable materials."
+  },
+  "waterbottle": {
+    "name": "Single-Use Plastic Bottle",
+    "unit": "bottles",
+    "co2_per_unit_kg": 0.08,
+    "recommendation": "Switching to a reusable metal or glass bottle prevents hundreds of single-use plastics from reaching landfills."
+  },
+  "coffeecup": {
+    "name": "Plastic Coffee Cup",
+    "unit": "cups",
+    "co2_per_unit_kg": 0.15,
+    "recommendation": "Bring a reusable thermos or mug to your local cafe to eliminate daily plastic and paper waste."
+  },
+  "laptop": {
+    "name": "Laptop Computer",
+    "unit": "hours",
+    "co2_per_unit_kg": 0.05,
+    "recommendation": "Extend the lifespan of your electronics and recycle e-waste properly to reduce manufacturing emissions."
+  },
+  "cloudstorage": {
+    "name": "Digital Footprint",
+    "unit": "GBs",
+    "co2_per_unit_kg": 0.02,
+    "recommendation": "Clean out old cloud storage, stream videos in Standard Definition (SD) instead of 4K, and extend the lifespan of smartphones to 4+ years."
+  },
+  "lightbulb": {
+    "name": "Incandescent Light Bulb",
+    "unit": "bulbs",
+    "co2_per_unit_kg": 0.05,
+    "recommendation": "Switch to LED bulbs. They use up to 90% less energy and last 25 times longer than traditional incandescent bulbs."
+  },
+  "shirt": {
+    "name": "Cotton Shirt",
+    "unit": "items",
+    "co2_per_unit_kg": 2.1,
+    "recommendation": "Avoid fast fashion. Buy high-quality clothes, mend what you have, and shop second-hand to reduce textile waste and emissions."
+  }
+}

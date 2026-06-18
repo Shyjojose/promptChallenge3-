@@ -1,0 +1,52 @@
+/* ==========================================
+   EcoSphere - Global Styles
+   ========================================== */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-dark: #03050f;
+  --bg-card: rgba(10, 16, 40, 0.85);
+  --accent-green: #00ff88;
+  --accent-cyan: #00d4ff;
+  --accent-red: #ff4d6d;
+  --accent-orange: #ff9500;
+  --text-primary: #e8f4ff;
+  --text-secondary: #7ea8d4;
+  --glow-green: 0 0 20px rgba(0, 255, 136, 0.4);
+  --glow-cyan: 0 0 20px rgba(0, 212, 255, 0.4);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --font-main: 'Space Grotesk', 'Inter', sans-serif;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-dark);
+  font-family: var(--font-main);
+  color: var(--text-primary);
+}
+
+/* Canvas fills entire screen */
+canvas {
+  display: block;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--accent-cyan); border-radius: 2px; }
+
+/* Utility classes */
+.glass {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+}
