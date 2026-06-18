@@ -43,6 +43,10 @@ Integrating the Gemini API and agentic behavior introduces specific risks outlin
 *   **Risk:** A user spams the UI or uses automated scripts to constantly trigger the LLM, racking up massive API bills.
 *   **Mitigation:** Implement strict rate-limiting on the backend endpoints that communicate with the Gemini API.
 
+### E. Client-Side API Key Exposure
+*   **Risk:** If the React/R3F frontend talks directly to Gemini, your private API key (or Application Default Credentials) will be leaked to the public internet instantly. Users could extract your API key from the browser's Network tab, steal your credits, and use your key for their own projects.
+*   **Mitigation:** **Strict Architecture Rule:** The React frontend must *never* call the Gemini API directly. All requests must route through the backend Express server (acting as a reverse proxy). The backend securely holds the API key as an environment variable (`process.env.GEMINI_API_KEY`) or uses Google Application Default Credentials, and communicates with Google.
+
 ---
 
 ## 3. Concrete Test Cases for Validation
