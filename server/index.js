@@ -166,7 +166,7 @@ Use "sweating" if CO2 is above 5kg, otherwise "happy".`;
     const text = await generateResponse(
       null, 
       [{ role: 'user', parts: [{ text: systemPrompt }] }], 
-      { temperature: 0.7, maxOutputTokens: 1024 }
+      { temperature: 0.7, maxOutputTokens: 1024, responseMimeType: "application/json" }
     );
 
     const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
