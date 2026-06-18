@@ -2,7 +2,7 @@
 
 A modern, interactive, AI-powered carbon footprint tracker built with React Three Fiber, Framer Motion, and the Google Gemini API. This application provides a unique 3D zero-gravity experience where users can interact with everyday objects to calculate their carbon emissions and receive friendly, AI-driven eco-advice from "Terra", the animated Earth mascot.
 
-> 🌍 **Live Demo:** [https://terra-tracker-503366840079.us-central1.run.app](https://terra-tracker-503366840079.us-central1.run.app)
+live demo updated 
 
 ---
 
