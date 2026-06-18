@@ -2,17 +2,115 @@
 
 A modern, interactive, AI-powered carbon footprint tracker built with React Three Fiber, Framer Motion, and the Google Gemini API. This application provides a unique 3D zero-gravity experience where users can interact with everyday objects to calculate their carbon emissions and receive friendly, AI-driven eco-advice from "Terra", the animated Earth mascot.
 
-live demo updated 
+> 🌍 **Live Demo:** [https://terra-tracker-503366840079.us-central1.run.app](https://terra-tracker-503366840079.us-central1.run.app)
+> 
+> 📁 **GitHub Repository:** [https://github.com/Shyjojose/promptChallenge3-](https://github.com/Shyjojose/promptChallenge3-)
 
 ---
 
-## 🎯 Problem Statement Alignment
+## 🎯 Chosen Vertical
 
-Our goal was to create an educational, non-judgmental, and highly engaging environmental tool. Instead of presenting users with boring forms and guilt-inducing charts, this application gamifies learning about carbon footprints. 
+**Sustainability & Environmental Awareness**
 
-* **Engaging UI:** A 3D zero-gravity canvas draws users in and makes interaction intuitive.
-* **Friendly Persona:** Terra acts as an eco-companion, utilizing the Gemini API to offer conversational, encouraging, and digestible feedback based on a static environmental knowledge base.
-* **Actionable Advice:** Users are provided with specific, calculate-able metrics and actionable tips to reduce their footprint without feeling overwhelmed.
+This project addresses the challenge of making carbon footprint education engaging, accessible, and actionable. Traditional environmental tools present raw data in tables and charts that fail to emotionally connect with users. Our solution gamifies the experience — turning everyday objects floating in a zero-gravity 3D space into interactive carbon calculators, guided by a friendly AI mascot named "Terra".
+
+---
+
+## 🧠 Approach & Logic
+
+### Design Philosophy
+Instead of showing numbers alone, we built an **experience**: a zero-gravity void where common objects (car, burger, laptop, plastic bottle, etc.) float around the user. Each object represents a real-world carbon source. The user clicks an object, enters their usage, and instantly receives a personalized, encouraging response from Terra.
+
+### Technical Architecture
+
+```
+[React + R3F Frontend]
+        ↓ (user clicks object)
+[Input Modal: slider/numeric input]
+        ↓ (user submits usage)
+[Frontend calculates CO2]
+   formula: usage × co2_per_unit_kg (from kb_data.json)
+        ↓
+[Express.js Backend Proxy /api/terra]
+   - Validates input (numeric + injection blacklist)
+   - Masks any PII from chat payloads
+   - Applies rate limiting (max 10 req/window)
+        ↓
+[Google Gemini API (via Vertex AI / AI Studio)]
+   - System prompt enforces Terra's persona
+   - Returns JSON: { dialogue, emotion_state }
+        ↓
+[React UI Updates]
+   - Terra mascot swaps image (happy / sweating / thinking)
+   - Speech bubble types out Terra's dialogue
+   - CO2 score and tip are displayed
+```
+
+### Knowledge Base (`kb_data.json`)
+The app tracks **12 everyday carbon sources**, each with:
+- A static CO2 emission factor (kg CO2 per unit)
+- A unit of measurement (miles, hours, servings, items, etc.)
+- A pre-written actionable recommendation
+
+| Object | CO2 Factor | Unit |
+|---|---|---|
+| Gasoline Car | 0.40 kg | per mile |
+| Air Conditioner | 0.50 kg | per hour |
+| Beef Burger | 3.00 kg | per serving |
+| Cotton Shirt | 2.10 kg | per item |
+| Laptop | 0.05 kg | per hour |
+| Plastic Bottle | 0.08 kg | per bottle |
+| Coffee Cup | 0.15 kg | per cup |
+| Imported Avocado | 0.20 kg | per serving |
+| Rubber Duck | 0.10 kg | per item |
+| Incandescent Bulb | 0.05 kg | per bulb |
+| Cloud Storage | 0.02 kg | per GB |
+| Zuk Van | 0.50 kg | per mile |
+
+---
+
+## ⚙️ How the Solution Works
+
+### User Journey (Step-by-Step)
+
+1. **Land on the app** → A dark zero-gravity void loads with 12 everyday objects floating around. Terra (the Earth mascot) greets the user from the corner.
+
+2. **Click a 3D object** (e.g., the 🚗 Car) → An input modal slides open, showing a slider or number input labeled *"How many miles do you drive per day?"*.
+
+3. **Enter usage data** → The frontend immediately computes:
+   ```
+   CO2 (kg) = daily_usage × co2_per_unit_kg
+   Annual CO2 (kg) = CO2 × 365
+   ```
+
+4. **Submit** → The calculated CO2 total, object name, and knowledge base recommendation are packaged into a prompt and sent to `/api/terra` on the Express backend.
+
+5. **Backend processes the request**:
+   - Validates that `user_input` is numeric and free of injection patterns
+   - Constructs a strict system prompt enforcing Terra's persona
+   - Calls the Gemini API
+   - Returns `{ dialogue, emotion_state }` JSON
+
+6. **React UI updates**:
+   - Terra's image switches to match the `emotion_state` (`happy`, `sweating`, or `thinking`)
+   - The `dialogue` text types out character-by-character in the speech bubble
+   - The CO2 score animates into view with a coloured badge
+
+7. **Fallback** → If the Gemini API fails or returns invalid JSON, Terra displays a pre-written fallback message from `kb_data.json` so the UX never breaks.
+
+---
+
+## 📋 Assumptions Made
+
+1. **CO2 emission factors are global static averages.** The values in `kb_data.json` are based on general IPCC/EPA published averages and are not adjusted for regional energy grids, vehicle types, or seasonal variation.
+
+2. **Gemini is a conversational wrapper, not a calculator.** All CO2 arithmetic is performed deterministically on the frontend using `kb_data.json`. The LLM's only job is to rephrase the pre-calculated result into encouraging, conversational language. This prevents hallucinated figures.
+
+3. **User inputs represent daily usage.** When a user inputs "50 miles", this is treated as their daily average. Annual impact is extrapolated by multiplying by 365.
+
+4. **No real-time data feeds are used.** The application does not integrate live electricity grid data, live fuel prices, or live weather APIs. It is intentionally designed to be fast, offline-capable (minus the LLM call), and cost-predictable.
+
+5. **Single user session model.** The app does not persist user data or track historical footprints across sessions. Each interaction is stateless.
 
 ---
 
@@ -20,9 +118,9 @@ Our goal was to create an educational, non-judgmental, and highly engaging envir
 
 The application is built on a robust, modern stack focusing on maintainability and DRY principles.
 
-* **Frontend:** React, React Three Fiber (R3F), `@react-three/drei`, `@react-three/rapier` (physics), and Tailwind CSS / custom vanilla CSS for styling.
-* **Backend:** Express.js Node backend serving as an API gateway to the Gemini API.
-* **Design Patterns:** 
+* **Frontend:** React, React Three Fiber (R3F), `@react-three/drei`, `@react-three/rapier` (physics), and custom vanilla CSS for styling.
+* **Backend:** Express.js Node backend serving as a secure API gateway to the Gemini API.
+* **Design Patterns:**
   * Strict componentization (e.g., separating `Scene`, `FloatingObject`, and `Mascot`).
   * Procedural 3D geometries are heavily utilized alongside optimized `.glb` assets.
   * State management ensures seamless UI/UX transitions between 3D and 2D HTML Overlays.
@@ -62,11 +160,11 @@ We implemented defenses against the OWASP Top 10 vulnerabilities for LLM Applica
 
 A robust three-tier testing strategy guarantees code reliability:
 
-1. **3D Component Testing (Vitest & React Three Test Renderer):** 
+1. **3D Component Testing (Vitest & React Three Test Renderer):**
    Headless rendering verifies that 3D meshes exist, tests for frame-rate independence, ensures imperative animations do not trigger React state, and validates that geometries do not leak memory via UUID tracking.
-2. **2D & Security Testing (Vitest & Supertest):** 
-   Verifies Mascot state transitions, ensures safe XSS handling, tests Express backend prompt-injection defenses, and enforces rate limits.
-3. **End-to-End Visual Testing (Playwright):** 
+2. **2D & Security Testing (Vitest & Supertest):**
+   Verifies Mascot state transitions, ensures safe XSS handling, tests Express backend prompt-injection defenses, and enforces rate limits with strict HTTP 400/429 assertions.
+3. **End-to-End Visual Testing (Playwright):**
    Automated browser tests ensure the WebGL canvas mounts, physics engines apply drift successfully, and simulated click interactions properly trigger the DOM modals.
 
 ---
@@ -83,21 +181,25 @@ A robust three-tier testing strategy guarantees code reliability:
 ## 🛠️ Getting Started
 
 ### Prerequisites
-* Node.js
+* Node.js v18+
 * Google Cloud SDK (for Application Default Credentials)
 
 ### Installation
 1. Clone the repository and install dependencies:
    ```bash
+   git clone https://github.com/Shyjojose/promptChallenge3-.git
+   cd promptChallenge3-
    npm install
    ```
 2. Setup your local environment variables in `.env`:
    ```env
    GOOGLE_CLOUD_PROJECT="your-project-id"
+   GEMINI_API_KEY="your-api-key"   # Optional: use instead of ADC
    ```
 3. Authenticate locally with Google Cloud (ADC):
    ```bash
    gcloud auth application-default login
+   gcloud auth application-default set-quota-project your-project-id
    ```
 
 ### Running the App
@@ -113,3 +215,13 @@ A robust three-tier testing strategy guarantees code reliability:
 ### Running Tests
 * Run Unit & Security Tests: `npm run test`
 * Run Playwright E2E Tests: `npm run test:e2e`
+
+### Cloud Deployment (Google Cloud Run)
+```bash
+gcloud run deploy terra-tracker \
+  --source . \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --set-env-vars=NODE_ENV=production \
+  --project=your-project-id
+```
