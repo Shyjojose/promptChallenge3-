@@ -46,7 +46,8 @@ We implemented defenses against the OWASP Top 10 vulnerabilities for LLM Applica
 * **Prompt Injection Defense:** Strict numerical and categorical input validation (`isNaN(Number(user_input))`) enforces boundaries before hitting the Gemini API, preventing users from hijacking the AI's persona.
 * **XSS Sanitization:** The React UI treats all LLM output as untrusted data, safely rendering it as strings without `dangerouslySetInnerHTML`.
 * **Rate Limiting:** The Express backend implements IP-based rate limiting using `express-rate-limit` to prevent "Denial of Wallet" attacks (unbounded consumption) and API abuse.
-* **Authentication Security:** Securely leverages Google Application Default Credentials (ADC) via `google-auth-library` to avoid hardcoding secrets.
+* **Authentication Security & Client-Side Key Exposure:** Securely leverages Google Application Default Credentials (ADC) via `google-auth-library` and strictly routes all traffic through the Node/Express backend reverse proxy to ensure the API credentials are never exposed to the client-side browser network tab.
+* **Model Data Leakage / Sensitive Data Poisoning (LLM07):** PII Masking algorithms automatically strip out and redact sensitive user data (like emails, Social Security Numbers, and Credit Cards) from user chat payloads on the proxy server before they are ever transmitted to the Google Gemini API.
 
 ---
 
