@@ -86,7 +86,17 @@ app.post('/api/terra', limiter, async (req, res) => {
     return res.status(400).json({ error: 'Missing required fields.' });
   }
 
-  // Strict numeric validation to prevent prompt injection
+  // Explicit prompt injection validation
+  const injectionPatterns = ['ignore all instructions', 'system prompt', 'you have been hacked'];
+  const inputStr = String(user_input).toLowerCase();
+  
+  for (const pattern of injectionPatterns) {
+    if (inputStr.includes(pattern)) {
+      return res.status(400).json({ error: 'Invalid input or potential exploit detected' });
+    }
+  }
+
+  // Strict numeric validation to prevent general injection
   if (isNaN(Number(user_input))) {
     return res.status(400).json({ error: 'Usage must be a numeric value.' });
   }
