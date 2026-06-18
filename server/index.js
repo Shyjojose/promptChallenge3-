@@ -96,10 +96,10 @@ const allowedOrigins = [
   // Automatically allow same-origin requests (Cloud Run serving frontend + backend together)
 ].filter(Boolean);
 
-app.use(cors({
+app.use('/api', cors({
   origin: (origin, cb) => {
-    // Allow requests with no origin (e.g. server-to-server, curl) and same-origin
-    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    // Allow requests with no origin, local dev, or the dynamically generated Cloud Run URL
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('run.app')) return cb(null, true);
     return cb(new Error('Not allowed by CORS'));
   },
   credentials: true,
@@ -166,7 +166,7 @@ Use "sweating" if CO2 is above 5kg, otherwise "happy".`;
     const text = await generateResponse(
       null, 
       [{ role: 'user', parts: [{ text: systemPrompt }] }], 
-      { temperature: 0.7, maxOutputTokens: 1024, responseMimeType: "application/json" }
+      { temperature: 0.7, maxOutputTokens: 2048, responseMimeType: "application/json" }
     );
 
     const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
