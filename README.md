@@ -118,20 +118,43 @@ The app tracks **12 everyday carbon sources**, each with:
 
 ## 💻 Code Quality & Architecture
 
-The application is built on a robust, modern stack focusing on maintainability and DRY principles.
+The application is built on a robust, modern stack focusing on maintainability, DRY principles, and **zero-tolerance static analysis**.
 
 * **Frontend:** React 18, React Three Fiber (R3F), `@react-three/drei`, `@react-three/rapier` (physics), Framer Motion, and custom vanilla CSS.
 * **Backend:** Express.js Node backend serving as a secure API gateway to the Gemini API.
 * **Design Patterns:**
   * Strict componentization: `Scene`, `FloatingObject`, `Mascot`, `Modal`, `HUD`, and `ChatWindow` are fully decoupled.
+  * Complex render bodies are decomposed into focused sub-components (`MessageBubble`, `SuggestionChips`, `ChatInput`, `ObjectModel`) to keep cyclomatic complexity below 10 per function.
   * Procedural 3D geometries for key objects (Car, AC, Burger, Laptop) alongside optimized `.glb` assets for the rest.
   * CO2 total is derived deterministically from a `contributions` map inside a single `setState` call, eliminating stale closure bugs.
   * All `THREE.js` scene clones are memoized with `useMemo` to prevent re-instantiation on parent re-renders.
   * Global CSS design tokens via CSS custom properties (`var(--...)`) for consistent theming and scalable UI updates.
 * **Backend Optimizations:**
   * Gemini/Vertex AI auth clients are cached at module startup, eliminating disk I/O on every API request.
-  * Token usage strictly bounded (`maxOutputTokens: 300`) and chat histories sliced to `MAX_HISTORY = 10` for cost and payload efficiency.
+  * API response parsing extracted into a dedicated `extractGeminiResponse()` helper to reduce branching complexity.
+  * Token usage strictly bounded (`maxOutputTokens: 600`) and chat histories sliced to `MAX_HISTORY = 10` for cost and payload efficiency.
 * **Version Control & Repository:** Unnecessary bloat is avoided (total repo size < 10MB) by ignoring `node_modules` and build outputs (`dist`) via strict `.gitignore` rules.
+
+### Static Code Analysis & Formatting
+
+The codebase enforces **zero linter errors and zero warnings** via automated tooling:
+
+| Metric | Tool | Target | Status |
+|--------|------|--------|--------|
+| Syntax & Pattern Errors | ESLint v9 (Flat Config) | Zero errors / warnings | ✅ Achieved |
+| Code Formatting | Prettier | Consistent across all files | ✅ Achieved |
+| Cyclomatic Complexity | ESLint `complexity` rule | ≤ 10 per function | ✅ Achieved |
+| Unused Imports / Dead Code | ESLint `no-unused-vars` | Zero warnings | ✅ Achieved |
+
+**ESLint plugins configured:** `eslint-plugin-react`, `eslint-plugin-react-hooks`, `eslint-plugin-jsx-a11y`, `eslint-plugin-prettier`.
+
+```bash
+# Lint the entire codebase
+npx eslint "src/**/*.{js,jsx}" "server/**/*.js"
+
+# Auto-fix formatting issues
+npx eslint "src/**/*.{js,jsx}" "server/**/*.js" --fix
+```
 
 ---
 
@@ -184,6 +207,9 @@ A robust three-tier testing strategy guarantees code reliability:
 ```bash
 # Unit & Security Tests
 npm run test
+
+# Lint (zero errors / zero warnings)
+npx eslint "src/**/*.{js,jsx}" "server/**/*.js"
 
 # Playwright E2E Tests
 npm run test:e2e
@@ -263,11 +289,11 @@ gcloud run deploy terra-tracker \
 ├── src/
 │   ├── components/
 │   │   ├── Scene.jsx         # R3F scene (stars, lights, physics walls, GLB preloading)
-│   │   ├── FloatingObject.jsx # Per-object physics + hover/click interactions (memoized)
+│   │   ├── FloatingObject.jsx # Per-object physics + hover/click + ObjectModel sub-component
 │   │   ├── Modal.jsx          # Accessible input modal (role="dialog")
 │   │   ├── Mascot.jsx         # Terra mascot + aria-live speech bubble
 │   │   ├── HUD.jsx            # CO2 score panel with accessible keyboard toggle
-│   │   ├── ChatWindow.jsx     # Follow-up chat with Terra (role="log", aria-live)
+│   │   ├── ChatWindow.jsx     # Chat with Terra + MessageBubble, SuggestionChips, ChatInput
 │   │   ├── ProceduralCar.jsx  # Procedural THREE.js Car geometry
 │   │   ├── ProceduralAC.jsx   # Procedural AC unit geometry
 │   │   ├── ProceduralBurger.jsx
@@ -275,9 +301,11 @@ gcloud run deploy terra-tracker \
 │   ├── data/
 │   │   └── kb_data.json      # Knowledge base: 12 carbon sources
 │   ├── App.jsx               # Root component + state management
-│   └── index.css             # Global styles + CSS design tokens
+│   └── index.css             # Global styles + CSS design tokens (30 tokens)
 ├── public/
 │   └── images/               # Terra mascot WebP assets (happy/sweating/thinking)
+├── eslint.config.js          # ESLint Flat Config (React, Hooks, a11y, Prettier, complexity)
+├── .prettierrc               # Prettier formatting rules
 ├── Dockerfile                # Production container
 ├── index.html                # Entry HTML with OG/Twitter meta tags
 └── playwright.config.js      # E2E test config
