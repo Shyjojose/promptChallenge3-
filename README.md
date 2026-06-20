@@ -127,6 +127,10 @@ The application is built on a robust, modern stack focusing on maintainability a
   * Procedural 3D geometries for key objects (Car, AC, Burger, Laptop) alongside optimized `.glb` assets for the rest.
   * CO2 total is derived deterministically from a `contributions` map inside a single `setState` call, eliminating stale closure bugs.
   * All `THREE.js` scene clones are memoized with `useMemo` to prevent re-instantiation on parent re-renders.
+  * Global CSS design tokens via CSS custom properties (`var(--...)`) for consistent theming and scalable UI updates.
+* **Backend Optimizations:**
+  * Gemini/Vertex AI auth clients are cached at module startup, eliminating disk I/O on every API request.
+  * Token usage strictly bounded (`maxOutputTokens: 300`) and chat histories sliced to `MAX_HISTORY = 10` for cost and payload efficiency.
 * **Version Control & Repository:** Unnecessary bloat is avoided (total repo size < 10MB) by ignoring `node_modules` and build outputs (`dist`) via strict `.gitignore` rules.
 
 ---
@@ -139,6 +143,7 @@ High-performance 3D rendering in the browser requires strict adherence to WebGL 
 * **Memory Leak Prevention:** All `THREE.Geometry` and `THREE.Material` instances are either declared declaratively using JSX elements or memoized (`useMemo`) outside the render loop. The application does not instantiate new `THREE` objects per frame.
 * **Frame-Rate Independence:** All animations use `delta` time provided by `useFrame` to ensure consistent physics simulation speed across different monitor refresh rates (60Hz vs 120Hz).
 * **Asset Preloading:** All GLB 3D model paths are preloaded via `useGLTF.preload()` at module initialization time, eliminating visible pop-in as the scene initializes.
+* **Robust Error Handling:** Missing or malformed GLB models are wrapped in a `GLBErrorBoundary` to render fallback geometries without crashing the main React tree.
 * **Loading Experience:** A smooth animated overlay (spinning 🌍 with fade-out) is displayed while the WebGL context and physics engine initialize, preventing a jarring blank-screen first impression.
 
 ---
@@ -170,6 +175,7 @@ A robust three-tier testing strategy guarantees code reliability:
 
 2. **2D & Security Testing (Vitest & Supertest):**
    Verifies Mascot state transitions (happy → sweating on high CO2), ensures safe XSS handling (no `<script>` DOM injection), tests Express backend prompt-injection defenses (HTTP 400 on malicious input), and enforces rate limits with strict HTTP 429 assertions.
+   * **Coverage:** Expanded to **37 tests** across 7 test files, comprehensively covering the React frontend (`App`, `ChatWindow`, `HUD`, `Modal`, `Mascot`, `FloatingObject`) and the Express backend.
 
 3. **End-to-End Visual Testing (Playwright):**
    Automated browser tests ensure the WebGL canvas mounts, physics engines apply drift successfully, and simulated click interactions properly trigger the DOM modals.
