@@ -37,29 +37,33 @@ export default function HUD({ totalCO2, contributions, kbData }) {
         aria-expanded={hasData ? expanded : undefined}
         aria-label="Toggle CO₂ breakdown"
         style={{ padding: '16px 20px', cursor: hasData ? 'pointer' : 'default' }}
-        onClick={() => hasData && setExpanded(v => !v)}
-        onKeyDown={(e) => e.key === 'Enter' && hasData && setExpanded(v => !v)}
+        onClick={() => hasData && setExpanded((v) => !v)}
+        onKeyDown={(e) => e.key === 'Enter' && hasData && setExpanded((v) => !v)}
       >
-        <div style={{
-          fontSize: '11px',
-          fontWeight: 600,
-          letterSpacing: '0.12em',
-          // H4 FIX: CSS vars
-          color: 'var(--text-secondary)',
-          textTransform: 'uppercase',
-          marginBottom: '4px',
-        }}>
+        <div
+          style={{
+            fontSize: '11px',
+            fontWeight: 600,
+            letterSpacing: '0.12em',
+            // H4 FIX: CSS vars
+            color: 'var(--text-secondary)',
+            textTransform: 'uppercase',
+            marginBottom: '4px',
+          }}
+        >
           Total CO₂ Footprint
         </div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-          <span style={{
-            fontSize: '36px',
-            fontWeight: '700',
-            color,
-            textShadow: `0 0 20px ${color}88`,
-            fontFamily: 'var(--font-main)',
-            transition: 'color 0.4s ease',
-          }}>
+          <span
+            style={{
+              fontSize: '36px',
+              fontWeight: '700',
+              color,
+              textShadow: `0 0 20px ${color}88`,
+              fontFamily: 'var(--font-main)',
+              transition: 'color 0.4s ease',
+            }}
+          >
             {totalCO2.toFixed(1)}
           </span>
           <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>kg CO₂</span>
@@ -72,11 +76,23 @@ export default function HUD({ totalCO2, contributions, kbData }) {
 
         {/* Progress bar */}
         {totalCO2 > 0 && (
-          <div style={{ marginTop: '10px', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
+          <div
+            style={{
+              marginTop: '10px',
+              height: '4px',
+              background: 'rgba(255,255,255,0.1)',
+              borderRadius: '2px',
+              overflow: 'hidden',
+            }}
+          >
             <motion.div
               animate={{ width: `${Math.min((totalCO2 / 50) * 100, 100)}%` }}
               transition={{ duration: 0.5, ease: 'easeOut' }}
-              style={{ height: '100%', background: `linear-gradient(90deg, var(--accent-green), ${color})`, borderRadius: '2px' }}
+              style={{
+                height: '100%',
+                background: `linear-gradient(90deg, var(--accent-green), ${color})`,
+                borderRadius: '2px',
+              }}
             />
           </div>
         )}
@@ -93,25 +109,32 @@ export default function HUD({ totalCO2, contributions, kbData }) {
             transition={{ duration: 0.25 }}
             style={{ marginTop: '8px', padding: '12px 16px', overflow: 'hidden' }}
           >
-            <div style={{
-              fontSize: '11px',
-              fontWeight: 600,
-              letterSpacing: '0.1em',
-              color: 'var(--text-secondary)',
-              textTransform: 'uppercase',
-              marginBottom: '8px',
-            }}>
+            <div
+              style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                letterSpacing: '0.1em',
+                color: 'var(--text-secondary)',
+                textTransform: 'uppercase',
+                marginBottom: '8px',
+              }}
+            >
               Breakdown
             </div>
             {Object.entries(contributions).map(([id, kg]) => (
-              <div key={id} style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                padding: '4px 0',
-                borderBottom: '1px solid var(--border-white-subtle)',
-                fontSize: '13px',
-              }}>
-                <span style={{ color: 'var(--text-muted)' }}>{kbData?.[id]?.name || id.replace(/_/g, ' ')}</span>
+              <div
+                key={id}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  padding: '4px 0',
+                  borderBottom: '1px solid var(--border-white-subtle)',
+                  fontSize: '13px',
+                }}
+              >
+                <span style={{ color: 'var(--text-muted)' }}>
+                  {kbData?.[id]?.name || id.replace(/_/g, ' ')}
+                </span>
                 <span style={{ color: CO2_COLOR(kg), fontWeight: 600 }}>{kg.toFixed(2)} kg</span>
               </div>
             ))}
@@ -121,7 +144,15 @@ export default function HUD({ totalCO2, contributions, kbData }) {
 
       {/* Title badge */}
       <div style={{ marginTop: '12px', paddingLeft: '4px' }}>
-        <div style={{ fontSize: '20px', fontWeight: 700, fontFamily: 'var(--font-main)', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+        <div
+          style={{
+            fontSize: '20px',
+            fontWeight: 700,
+            fontFamily: 'var(--font-main)',
+            color: 'var(--text-primary)',
+            letterSpacing: '-0.02em',
+          }}
+        >
           🌍 EcoSphere
         </div>
         <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const MASCOT_IMAGES = {
-  happy:    '/images/earth_happy.webp',
+  happy: '/images/earth_happy.webp',
   sweating: '/images/earth_sweating.webp',
   thinking: '/images/earth_thinking.webp',
 }
@@ -42,17 +42,19 @@ export default function Mascot({ emotion, dialogue, onDismiss }) {
   const src = MASCOT_IMAGES[emotion] || MASCOT_IMAGES.happy
 
   return (
-    <div style={{
-      position: 'fixed',
-      bottom: '24px',
-      right: '24px',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'flex-end',
-      gap: '12px',
-      zIndex: 100,
-      pointerEvents: 'none',
-    }}>
+    <div
+      style={{
+        position: 'fixed',
+        bottom: '24px',
+        right: '24px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-end',
+        gap: '12px',
+        zIndex: 100,
+        pointerEvents: 'none',
+      }}
+    >
       {/* Speech bubble — aria-live so screen readers announce new dialogue */}
       <div aria-live="polite" aria-atomic="true">
         <AnimatePresence>

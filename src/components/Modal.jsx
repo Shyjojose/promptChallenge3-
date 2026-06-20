@@ -20,12 +20,12 @@ async function callTerraAPI(payload) {
 }
 
 const SLIDER_RANGES = {
-  ac_unit:     { min: 0, max: 24,  step: 1,   default: 4 },
-  car:         { min: 0, max: 200, step: 5,    default: 30 },
-  burger:      { min: 0, max: 30,  step: 1,    default: 3 },
-  avocado:     { min: 0, max: 50,  step: 1,    default: 5 },
-  duck:        { min: 0, max: 20,  step: 1,    default: 1 },
-  waterbottle: { min: 0, max: 100, step: 1,    default: 5 },
+  ac_unit: { min: 0, max: 24, step: 1, default: 4 },
+  car: { min: 0, max: 200, step: 5, default: 30 },
+  burger: { min: 0, max: 30, step: 1, default: 3 },
+  avocado: { min: 0, max: 50, step: 1, default: 5 },
+  duck: { min: 0, max: 20, step: 1, default: 1 },
+  waterbottle: { min: 0, max: 100, step: 1, default: 5 },
 }
 
 export default function Modal({ object, onClose, onSubmit, setMascotState }) {
@@ -71,8 +71,11 @@ export default function Modal({ object, onClose, onSubmit, setMascotState }) {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         style={{
-          position: 'fixed', inset: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          position: 'fixed',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           background: 'rgba(0,0,0,0.7)',
           backdropFilter: 'blur(8px)',
           zIndex: 200,
@@ -95,17 +98,31 @@ export default function Modal({ object, onClose, onSubmit, setMascotState }) {
           <button
             onClick={onClose}
             style={{
-              position: 'absolute', top: '16px', right: '16px',
-              background: 'transparent', border: 'none',
+              position: 'absolute',
+              top: '16px',
+              right: '16px',
+              background: 'transparent',
+              border: 'none',
               // H4 FIX: use CSS var
-              color: 'var(--text-secondary)', fontSize: '20px', cursor: 'pointer', lineHeight: 1,
+              color: 'var(--text-secondary)',
+              fontSize: '20px',
+              cursor: 'pointer',
+              lineHeight: 1,
             }}
             aria-label="Close modal"
           >
             ✕
           </button>
 
-          <h2 id="modal-object-title" style={{ fontSize: '22px', fontWeight: 700, marginBottom: '4px', fontFamily: 'var(--font-main)' }}>
+          <h2
+            id="modal-object-title"
+            style={{
+              fontSize: '22px',
+              fontWeight: 700,
+              marginBottom: '4px',
+              fontFamily: 'var(--font-main)',
+            }}
+          >
             {object.name}
           </h2>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '28px' }}>
@@ -117,7 +134,10 @@ export default function Modal({ object, onClose, onSubmit, setMascotState }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
               <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Usage amount</span>
               <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                {value} <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{object.unit}</span>
+                {value}{' '}
+                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                  {object.unit}
+                </span>
               </span>
             </div>
             <input
@@ -139,26 +159,54 @@ export default function Modal({ object, onClose, onSubmit, setMascotState }) {
                 cursor: 'pointer',
               }}
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '11px', color: 'var(--text-secondary)' }}>
-              <span>{range.min}</span><span>{range.max}</span>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginTop: '4px',
+                fontSize: '11px',
+                color: 'var(--text-secondary)',
+              }}
+            >
+              <span>{range.min}</span>
+              <span>{range.max}</span>
             </div>
           </div>
 
           {/* CO2 Result */}
-          <div style={{
-            background: `rgba(${isHigh ? '255,77,109' : '0,255,136'},0.06)`,
-            border: `1px solid ${co2Color}33`,
-            borderRadius: '12px',
-            padding: '16px',
-            marginBottom: '20px',
-            textAlign: 'center',
-          }}>
-            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>
+          <div
+            style={{
+              background: `rgba(${isHigh ? '255,77,109' : '0,255,136'},0.06)`,
+              border: `1px solid ${co2Color}33`,
+              borderRadius: '12px',
+              padding: '16px',
+              marginBottom: '20px',
+              textAlign: 'center',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '11px',
+                color: 'var(--text-secondary)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                marginBottom: '6px',
+              }}
+            >
               Estimated CO₂
             </div>
-            <div style={{ fontSize: '42px', fontWeight: 700, color: co2Color, textShadow: `0 0 20px ${co2Color}66` }}>
+            <div
+              style={{
+                fontSize: '42px',
+                fontWeight: 700,
+                color: co2Color,
+                textShadow: `0 0 20px ${co2Color}66`,
+              }}
+            >
               {co2}
-              <span style={{ fontSize: '18px', color: 'var(--text-secondary)', marginLeft: '4px' }}>kg</span>
+              <span style={{ fontSize: '18px', color: 'var(--text-secondary)', marginLeft: '4px' }}>
+                kg
+              </span>
             </div>
             {isHigh && (
               <div style={{ fontSize: '12px', color: 'var(--accent-orange)', marginTop: '6px' }}>
@@ -168,7 +216,15 @@ export default function Modal({ object, onClose, onSubmit, setMascotState }) {
           </div>
 
           {/* Recommendation */}
-          <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '24px', lineHeight: '1.5', padding: '0 4px' }}>
+          <div
+            style={{
+              fontSize: '13px',
+              color: 'var(--text-secondary)',
+              marginBottom: '24px',
+              lineHeight: '1.5',
+              padding: '0 4px',
+            }}
+          >
             💡 {object.recommendation}
           </div>
 
@@ -181,9 +237,7 @@ export default function Modal({ object, onClose, onSubmit, setMascotState }) {
             style={{
               width: '100%',
               padding: '14px',
-              background: loading
-                ? 'rgba(0,212,255,0.2)'
-                : 'var(--gradient-cta)',
+              background: loading ? 'rgba(0,212,255,0.2)' : 'var(--gradient-cta)',
               border: 'none',
               borderRadius: '12px',
               color: 'var(--bg-dark)',

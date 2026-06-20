@@ -16,9 +16,12 @@ function LoadingOverlay() {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.8 }}
       style={{
-        position: 'fixed', inset: 0,
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
+        position: 'fixed',
+        inset: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
         // H4 FIX: use CSS var instead of duplicating the raw gradient string
         background: 'var(--gradient-bg)',
         zIndex: 9999,
@@ -32,16 +35,25 @@ function LoadingOverlay() {
       >
         🌍
       </motion.div>
-      <div style={{
-        color: 'var(--accent-cyan)',
-        fontFamily: 'var(--font-main)',
-        fontSize: '18px',
-        fontWeight: 600,
-        letterSpacing: '0.05em',
-      }}>
+      <div
+        style={{
+          color: 'var(--accent-cyan)',
+          fontFamily: 'var(--font-main)',
+          fontSize: '18px',
+          fontWeight: 600,
+          letterSpacing: '0.05em',
+        }}
+      >
         Launching EcoSphere…
       </div>
-      <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '8px', fontFamily: 'var(--font-main)' }}>
+      <div
+        style={{
+          color: 'var(--text-secondary)',
+          fontSize: '13px',
+          marginTop: '8px',
+          fontFamily: 'var(--font-main)',
+        }}
+      >
         Loading zero-gravity environment
       </div>
     </motion.div>
@@ -64,7 +76,7 @@ export default function App() {
 
   const handleModalClose = useCallback(() => {
     setSelectedObject(null)
-    setMascotState(prev => ({ ...prev, dialogue: null }))
+    setMascotState((prev) => ({ ...prev, dialogue: null }))
   }, [])
 
   // H2 FIX: `recommendation` is now passed explicitly as a parameter from
@@ -73,7 +85,7 @@ export default function App() {
   // no outer-scope state is read inside the callback.
   const handleCO2Update = useCallback((objectId, co2Amount, mascotResponse, recommendation) => {
     // Compute total inside setContributions so we always work from latest state
-    setContributions(prev => {
+    setContributions((prev) => {
       const next = { ...prev, [objectId]: co2Amount }
       const total = Object.values(next).reduce((sum, v) => sum + v, 0)
       setTotalCO2(parseFloat(total.toFixed(2)))
@@ -88,8 +100,8 @@ export default function App() {
       setChatContext({
         object_name: mascotResponse.object_name || 'this item',
         co2_amount: co2Amount,
-        recommendation,          // H2 FIX: passed in, never stale
-        initialMessage: mascotResponse.dialogue
+        recommendation, // H2 FIX: passed in, never stale
+        initialMessage: mascotResponse.dialogue,
       })
     }
   }, []) // empty deps is now correct — no captured mutable state
@@ -104,18 +116,13 @@ export default function App() {
       >
         <Suspense fallback={null}>
           <Physics gravity={[0, 0, 0]}>
-            <Scene
-              onObjectClick={handleObjectClick}
-              activeObjectId={selectedObject?.id}
-            />
+            <Scene onObjectClick={handleObjectClick} activeObjectId={selectedObject?.id} />
           </Physics>
         </Suspense>
       </Canvas>
 
       {/* Loading overlay rendered in regular DOM, outside Canvas */}
-      <AnimatePresence>
-        {!isLoaded && <LoadingOverlay key="loader" />}
-      </AnimatePresence>
+      <AnimatePresence>{!isLoaded && <LoadingOverlay key="loader" />}</AnimatePresence>
 
       {/* 2D Overlay Layer */}
       <HUD totalCO2={totalCO2} contributions={contributions} kbData={kbData} />
@@ -123,15 +130,12 @@ export default function App() {
       <Mascot
         emotion={mascotState.emotion}
         dialogue={chatContext ? null : mascotState.dialogue}
-        onDismiss={() => setMascotState(prev => ({ ...prev, dialogue: null }))}
+        onDismiss={() => setMascotState((prev) => ({ ...prev, dialogue: null }))}
       />
-      
+
       <AnimatePresence>
         {chatContext && (
-          <ChatWindow 
-            initialContext={chatContext} 
-            onClose={() => setChatContext(null)} 
-          />
+          <ChatWindow initialContext={chatContext} onClose={() => setChatContext(null)} />
         )}
       </AnimatePresence>
 

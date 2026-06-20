@@ -38,17 +38,41 @@ class GLBErrorBoundary extends Component {
   }
 }
 
-function GLBModel({ modelPath, color, baseScale = 1.5 }) {
+function GLBModel({ modelPath, baseScale = 1.5 }) {
   const { scene } = useGLTF(modelPath)
   const clonedScene = useMemo(() => scene.clone(), [scene])
 
   return <primitive object={clonedScene} scale={baseScale} />
 }
 
+function ObjectModel({ id, scale, modelPath }) {
+  if (id === 'burger') return <ProceduralBurger scale={scale * 1.5} />
+  if (id === 'ac_unit') return <ProceduralAC scale={scale} />
+  if (id === 'car') return <ProceduralCar scale={scale} />
+  if (id === 'laptop') return <ProceduralLaptop scale={scale} />
+
+  return (
+    // M3 FIX: Wrapped in GLBErrorBoundary — a bad model URL now
+    // renders a fallback sphere instead of crashing the whole scene.
+    <GLBErrorBoundary>
+      <GLBModel modelPath={modelPath} baseScale={scale} />
+    </GLBErrorBoundary>
+  )
+}
+
 export default function FloatingObject({
   // M2 FIX: `collider` now comes from the OBJECTS data in Scene.jsx instead
   // of being derived from a hard-coded JSX ternary checking id values.
-  id, modelPath, label, color, position, impulse, scale = 1.5, collider = 'ball', isActive, onClick,
+  id,
+  modelPath,
+  label,
+  color,
+  position,
+  impulse,
+  scale = 1.5,
+  collider = 'ball',
+  isActive,
+  onClick,
 }) {
   const rigidRef = useRef()
   const meshGroupRef = useRef()
@@ -60,8 +84,14 @@ export default function FloatingObject({
     // A small timeout ensures Rapier has initialized the rigid body
     const timer = setTimeout(() => {
       if (rigidRef.current) {
-        rigidRef.current.setLinvel({ x: impulse[0] * 20, y: impulse[1] * 20, z: impulse[2] * 20 }, true)
-        rigidRef.current.setAngvel({ x: impulse[0] * 5, y: impulse[1] * 5, z: impulse[2] * 5 }, true)
+        rigidRef.current.setLinvel(
+          { x: impulse[0] * 20, y: impulse[1] * 20, z: impulse[2] * 20 },
+          true
+        )
+        rigidRef.current.setAngvel(
+          { x: impulse[0] * 5, y: impulse[1] * 5, z: impulse[2] * 5 },
+          true
+        )
       }
     }, 100)
     return () => clearTimeout(timer)
@@ -93,38 +123,26 @@ export default function FloatingObject({
         {(hovered || isActive) && (
           <mesh>
             <sphereGeometry args={[1.1, 16, 16]} />
-            <meshBasicMaterial
-              color={color}
-              transparent
-              opacity={0.08}
-              side={THREE.BackSide}
-            />
+            <meshBasicMaterial color={color} transparent opacity={0.08} side={THREE.BackSide} />
           </mesh>
         )}
 
         <group
-          onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer' }}
-          onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto' }}
+          onPointerOver={(e) => {
+            e.stopPropagation()
+            setHovered(true)
+            document.body.style.cursor = 'pointer'
+          }}
+          onPointerOut={() => {
+            setHovered(false)
+            document.body.style.cursor = 'auto'
+          }}
           onClick={(e) => {
             e.stopPropagation()
             onClick()
           }}
         >
-          {id === 'burger' ? (
-            <ProceduralBurger scale={scale * 1.5} />
-          ) : id === 'ac_unit' ? (
-            <ProceduralAC scale={scale} />
-          ) : id === 'car' ? (
-            <ProceduralCar scale={scale} />
-          ) : id === 'laptop' ? (
-            <ProceduralLaptop scale={scale} />
-          ) : (
-            // M3 FIX: Wrapped in GLBErrorBoundary — a bad model URL now
-            // renders a fallback sphere instead of crashing the whole scene.
-            <GLBErrorBoundary>
-              <GLBModel modelPath={modelPath} color={color} baseScale={scale} />
-            </GLBErrorBoundary>
-          )}
+          <ObjectModel id={id} scale={scale} modelPath={modelPath} />
         </group>
 
         {/* Floating label — uses CSS vars via inline style in Html overlay */}
@@ -137,19 +155,21 @@ export default function FloatingObject({
             transition: 'opacity 0.2s',
           }}
         >
-          <div style={{
-            background: 'rgba(3,5,15,0.9)',
-            border: `1px solid ${color}`,
-            borderRadius: '8px',
-            padding: '4px 12px',
-            color: color,
-            fontFamily: 'var(--font-main)',
-            fontSize: '13px',
-            fontWeight: '600',
-            whiteSpace: 'nowrap',
-            boxShadow: `0 0 12px ${color}55`,
-            transform: 'translateY(-60px)',
-          }}>
+          <div
+            style={{
+              background: 'rgba(3,5,15,0.9)',
+              border: `1px solid ${color}`,
+              borderRadius: '8px',
+              padding: '4px 12px',
+              color: color,
+              fontFamily: 'var(--font-main)',
+              fontSize: '13px',
+              fontWeight: '600',
+              whiteSpace: 'nowrap',
+              boxShadow: `0 0 12px ${color}55`,
+              transform: 'translateY(-60px)',
+            }}
+          >
             {label}
           </div>
         </Html>

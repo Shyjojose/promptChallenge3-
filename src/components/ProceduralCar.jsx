@@ -1,9 +1,8 @@
 import { useRef } from 'react'
-import * as THREE from 'three'
 
 export default function ProceduralCar({ scale = 1 }) {
   const group = useRef()
-  
+
   return (
     <group ref={group} scale={scale}>
       {/* Main Chassis */}
@@ -11,7 +10,7 @@ export default function ProceduralCar({ scale = 1 }) {
         <boxGeometry args={[2, 0.4, 1]} />
         <meshStandardMaterial color="#e74c3c" roughness={0.4} metalness={0.6} />
       </mesh>
-      
+
       {/* Cabin / Roof */}
       <mesh position={[-0.2, 0.6, 0]}>
         <boxGeometry args={[1.2, 0.4, 0.9]} />

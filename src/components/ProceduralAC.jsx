@@ -2,7 +2,7 @@ import { useRef } from 'react'
 
 export default function ProceduralAC({ scale = 1 }) {
   const group = useRef()
-  
+
   return (
     <group ref={group} scale={scale}>
       {/* Main Body */}
@@ -10,7 +10,7 @@ export default function ProceduralAC({ scale = 1 }) {
         <boxGeometry args={[1.5, 0.6, 0.5]} />
         <meshStandardMaterial color="#ffffff" roughness={0.6} />
       </mesh>
-      
+
       {/* Front Vent Area */}
       <mesh position={[0, -0.1, 0.26]}>
         <boxGeometry args={[1.3, 0.25, 0.05]} />
@@ -26,7 +26,7 @@ export default function ProceduralAC({ scale = 1 }) {
         <boxGeometry args={[1.2, 0.02, 0.02]} />
         <meshStandardMaterial color="#dddddd" roughness={0.5} />
       </mesh>
-      
+
       {/* Top Intake Grill */}
       <mesh position={[0, 0.31, 0]}>
         <boxGeometry args={[1.2, 0.02, 0.3]} />
