@@ -8,7 +8,13 @@ const SUGGESTED_QUESTIONS = [
   'How does this compare to average?',
 ];
 
+// M4 FIX: Cap message history at 10 exchanges to bound token cost and
+// request payload size. Long conversations were previously sent in full.
+const MAX_HISTORY = 10;
+
 export default function ChatWindow({ onClose, initialContext }) {
+  // L4 FIX: Compute co2Label inside the component body (not at the call-site
+  // closure boundary), so it is never stale if initialContext were to change.
   const co2Label = initialContext.co2_amount != null
     ? ` (${initialContext.co2_amount} kg CO₂/day)`
     : '';
@@ -40,11 +46,15 @@ export default function ChatWindow({ onClose, initialContext }) {
     setLoading(true);
 
     try {
+      // M4 FIX: Slice to last MAX_HISTORY messages before sending to the API
+      // to prevent unbounded growth in token cost and payload size.
+      const windowedMessages = newMessages.slice(-MAX_HISTORY);
+
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: newMessages,
+          messages: windowedMessages,
           // Pass carbon context so server builds a relevant system prompt
           context: {
             object_name: initialContext.object_name,
@@ -55,6 +65,8 @@ export default function ChatWindow({ onClose, initialContext }) {
       });
       if (!res.ok) throw new Error('API Error');
       const data = await res.json();
+      // M6 server fallback means data.text will always be present on success
+      // or graceful failure; only an unhandled network error throws below.
       if (data.text) {
         setMessages(prev => [...prev, { role: 'model', text: data.text }]);
       }
@@ -80,13 +92,14 @@ export default function ChatWindow({ onClose, initialContext }) {
         right: '160px', // next to mascot
         width: '320px',
         height: '450px',
-        background: 'rgba(3, 5, 15, 0.95)',
-        border: '1px solid rgba(0, 212, 255, 0.4)',
+        // H4 FIX: CSS vars throughout
+        background: 'var(--bg-overlay)',
+        border: '1px solid var(--border-cyan)',
         borderRadius: '16px',
         display: 'flex',
         flexDirection: 'column',
         backdropFilter: 'blur(16px)',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+        boxShadow: 'var(--shadow-card)',
         zIndex: 150,
         overflow: 'hidden'
       }}
@@ -94,13 +107,13 @@ export default function ChatWindow({ onClose, initialContext }) {
       {/* Header */}
       <div style={{
         padding: '12px 16px',
-        borderBottom: '1px solid rgba(0, 212, 255, 0.2)',
+        borderBottom: '1px solid var(--border-cyan-dim)',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        background: 'rgba(0, 212, 255, 0.1)'
+        background: 'var(--bg-cyan-tint)'
       }}>
-        <h3 style={{ margin: 0, color: '#e8f4ff', fontSize: '15px', fontFamily: 'Space Grotesk, sans-serif' }}>
+        <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '15px', fontFamily: 'var(--font-main)' }}>
           Chat with Terra
         </h3>
         <button
@@ -109,7 +122,7 @@ export default function ChatWindow({ onClose, initialContext }) {
           style={{
             background: 'none',
             border: 'none',
-            color: '#7ea8d4',
+            color: 'var(--text-secondary)',
             cursor: 'pointer',
             fontSize: '18px',
             lineHeight: 1
@@ -142,13 +155,13 @@ export default function ChatWindow({ onClose, initialContext }) {
             style={{
               alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
               maxWidth: '85%',
-              background: msg.role === 'user' ? 'rgba(0, 212, 255, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-              border: msg.role === 'user' ? '1px solid rgba(0, 212, 255, 0.4)' : '1px solid rgba(255, 255, 255, 0.1)',
+              background: msg.role === 'user' ? 'var(--bg-user-bubble)' : 'var(--bg-white-faint)',
+              border: msg.role === 'user' ? '1px solid var(--border-cyan)' : '1px solid var(--border-white-faint)',
               padding: '10px 14px',
               borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-              color: '#e8f4ff',
+              color: 'var(--text-primary)',
               fontSize: '14px',
-              fontFamily: 'Space Grotesk, sans-serif',
+              fontFamily: 'var(--font-main)',
               lineHeight: 1.4
             }}
           >
@@ -170,19 +183,19 @@ export default function ChatWindow({ onClose, initialContext }) {
                   key={q}
                   onClick={() => handleSuggestion(q)}
                   style={{
-                    background: 'rgba(0, 212, 255, 0.08)',
-                    border: '1px solid rgba(0, 212, 255, 0.25)',
+                    background: 'var(--bg-cyan-chip)',
+                    border: '1px solid var(--border-cyan-faint)',
                     borderRadius: '20px',
                     padding: '6px 12px',
-                    color: '#00d4ff',
+                    color: 'var(--accent-cyan)',
                     fontSize: '12px',
-                    fontFamily: 'Space Grotesk, sans-serif',
+                    fontFamily: 'var(--font-main)',
                     cursor: 'pointer',
                     textAlign: 'left',
                     transition: 'background 0.15s',
                   }}
-                  onMouseOver={e => e.currentTarget.style.background = 'rgba(0,212,255,0.18)'}
-                  onMouseOut={e => e.currentTarget.style.background = 'rgba(0,212,255,0.08)'}
+                  onMouseOver={e => e.currentTarget.style.background = 'var(--bg-cyan-chip-hover)'}
+                  onMouseOut={e => e.currentTarget.style.background = 'var(--bg-cyan-chip)'}
                 >
                   💬 {q}
                 </button>
@@ -194,9 +207,9 @@ export default function ChatWindow({ onClose, initialContext }) {
         {loading && (
           <div style={{
             alignSelf: 'flex-start',
-            color: '#7ea8d4',
+            color: 'var(--text-secondary)',
             fontSize: '13px',
-            fontFamily: 'Space Grotesk, sans-serif'
+            fontFamily: 'var(--font-main)'
           }}>
             Terra is thinking... 🌍
           </div>
@@ -208,7 +221,7 @@ export default function ChatWindow({ onClose, initialContext }) {
       {/* Input */}
       <div style={{
         padding: '12px',
-        borderTop: '1px solid rgba(0, 212, 255, 0.2)',
+        borderTop: '1px solid var(--border-cyan-dim)',
         display: 'flex',
         gap: '8px'
       }}>
@@ -221,24 +234,24 @@ export default function ChatWindow({ onClose, initialContext }) {
           aria-label="Message to Terra"
           style={{
             flex: 1,
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            background: 'var(--bg-white-faint)',
+            border: '1px solid var(--border-white-faint)',
             borderRadius: '8px',
             padding: '8px 12px',
-            color: '#e8f4ff',
+            color: 'var(--text-primary)',
             outline: 'none',
-            fontFamily: 'Space Grotesk, sans-serif'
+            fontFamily: 'var(--font-main)'
           }}
         />
         <button
           onClick={handleSend}
           disabled={loading || !input.trim()}
           style={{
-            background: 'linear-gradient(135deg, #00d4ff, #00ff88)',
+            background: 'var(--gradient-cta)',
             border: 'none',
             borderRadius: '8px',
             padding: '0 16px',
-            color: '#03050f',
+            color: 'var(--bg-dark)',
             fontWeight: 'bold',
             cursor: loading || !input.trim() ? 'not-allowed' : 'pointer',
             opacity: loading || !input.trim() ? 0.5 : 1

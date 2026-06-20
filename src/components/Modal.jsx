@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 async function callTerraAPI(payload) {
@@ -35,7 +35,14 @@ export default function Modal({ object, onClose, onSubmit, setMascotState }) {
 
   const co2 = parseFloat((value * object.co2_per_unit_kg).toFixed(2))
   const isHigh = co2 > 5
-  const co2Color = co2 < 2 ? '#00ff88' : co2 < 10 ? '#ff9500' : '#ff4d6d'
+
+  // L2 FIX: Memoize co2Color so it isn't recalculated on every render during
+  // slider drag events (previously a plain ternary expression on every render).
+  const co2Color = useMemo(() => {
+    if (co2 < 2) return 'var(--accent-green)'
+    if (co2 < 10) return 'var(--accent-orange)'
+    return 'var(--accent-red)'
+  }, [co2])
 
   const handleSubmit = async () => {
     setLoading(true)
@@ -49,8 +56,10 @@ export default function Modal({ object, onClose, onSubmit, setMascotState }) {
       unit: object.unit,
     })
 
-    mascotResponse.object_name = object.name;
-    onSubmit(object.id, co2, mascotResponse)
+    mascotResponse.object_name = object.name
+    // H2 FIX: Pass object.recommendation as the 4th argument so App.jsx can
+    // store it without relying on a potentially stale selectedObject closure.
+    onSubmit(object.id, co2, mascotResponse, object.recommendation)
     setLoading(false)
     onClose()
   }
@@ -88,26 +97,27 @@ export default function Modal({ object, onClose, onSubmit, setMascotState }) {
             style={{
               position: 'absolute', top: '16px', right: '16px',
               background: 'transparent', border: 'none',
-              color: '#7ea8d4', fontSize: '20px', cursor: 'pointer', lineHeight: 1,
+              // H4 FIX: use CSS var
+              color: 'var(--text-secondary)', fontSize: '20px', cursor: 'pointer', lineHeight: 1,
             }}
             aria-label="Close modal"
           >
             ✕
           </button>
 
-          <h2 id="modal-object-title" style={{ fontSize: '22px', fontWeight: 700, marginBottom: '4px', fontFamily: 'Space Grotesk, sans-serif' }}>
+          <h2 id="modal-object-title" style={{ fontSize: '22px', fontWeight: 700, marginBottom: '4px', fontFamily: 'var(--font-main)' }}>
             {object.name}
           </h2>
-          <p style={{ fontSize: '13px', color: '#7ea8d4', marginBottom: '28px' }}>
+          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '28px' }}>
             How many {object.unit} per day?
           </p>
 
           {/* Slider */}
           <div style={{ marginBottom: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-              <span style={{ fontSize: '13px', color: '#7ea8d4' }}>Usage amount</span>
-              <span style={{ fontSize: '18px', fontWeight: 700, color: '#e8f4ff' }}>
-                {value} <span style={{ fontSize: '13px', color: '#7ea8d4' }}>{object.unit}</span>
+              <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Usage amount</span>
+              <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                {value} <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{object.unit}</span>
               </span>
             </div>
             <input
@@ -123,13 +133,13 @@ export default function Modal({ object, onClose, onSubmit, setMascotState }) {
                 WebkitAppearance: 'none',
                 appearance: 'none',
                 height: '6px',
-                background: `linear-gradient(90deg, #00d4ff ${((value - range.min) / (range.max - range.min)) * 100}%, rgba(255,255,255,0.1) 0%)`,
+                background: `linear-gradient(90deg, var(--accent-cyan) ${((value - range.min) / (range.max - range.min)) * 100}%, rgba(255,255,255,0.1) 0%)`,
                 borderRadius: '3px',
                 outline: 'none',
                 cursor: 'pointer',
               }}
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '11px', color: '#7ea8d4' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '11px', color: 'var(--text-secondary)' }}>
               <span>{range.min}</span><span>{range.max}</span>
             </div>
           </div>
@@ -143,22 +153,22 @@ export default function Modal({ object, onClose, onSubmit, setMascotState }) {
             marginBottom: '20px',
             textAlign: 'center',
           }}>
-            <div style={{ fontSize: '11px', color: '#7ea8d4', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>
               Estimated CO₂
             </div>
             <div style={{ fontSize: '42px', fontWeight: 700, color: co2Color, textShadow: `0 0 20px ${co2Color}66` }}>
               {co2}
-              <span style={{ fontSize: '18px', color: '#7ea8d4', marginLeft: '4px' }}>kg</span>
+              <span style={{ fontSize: '18px', color: 'var(--text-secondary)', marginLeft: '4px' }}>kg</span>
             </div>
             {isHigh && (
-              <div style={{ fontSize: '12px', color: '#ff9500', marginTop: '6px' }}>
+              <div style={{ fontSize: '12px', color: 'var(--accent-orange)', marginTop: '6px' }}>
                 ⚠ That's quite a lot! Terra has a tip for you.
               </div>
             )}
           </div>
 
           {/* Recommendation */}
-          <div style={{ fontSize: '13px', color: '#7ea8d4', marginBottom: '24px', lineHeight: '1.5', padding: '0 4px' }}>
+          <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '24px', lineHeight: '1.5', padding: '0 4px' }}>
             💡 {object.recommendation}
           </div>
 
@@ -173,13 +183,13 @@ export default function Modal({ object, onClose, onSubmit, setMascotState }) {
               padding: '14px',
               background: loading
                 ? 'rgba(0,212,255,0.2)'
-                : 'linear-gradient(135deg, #00d4ff, #00ff88)',
+                : 'var(--gradient-cta)',
               border: 'none',
               borderRadius: '12px',
-              color: '#03050f',
+              color: 'var(--bg-dark)',
               fontWeight: 700,
               fontSize: '15px',
-              fontFamily: 'Space Grotesk, sans-serif',
+              fontFamily: 'var(--font-main)',
               cursor: loading ? 'not-allowed' : 'pointer',
               transition: 'all 0.2s ease',
             }}

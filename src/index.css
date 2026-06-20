@@ -8,19 +8,55 @@
   padding: 0;
 }
 
+/* H4 FIX: Extended design token set so components can reference vars instead
+   of repeating raw hex strings throughout JSX inline styles.
+   Previously: #00d4ff appeared ~15×, 'Space Grotesk' appeared ~12×, etc. */
 :root {
+  /* Backgrounds */
   --bg-dark: #03050f;
   --bg-card: rgba(10, 16, 40, 0.85);
+  --bg-overlay: rgba(3, 5, 15, 0.95);
+  --bg-overlay-light: rgba(3, 5, 15, 0.92);
+
+  /* Accent colours */
   --accent-green: #00ff88;
   --accent-cyan: #00d4ff;
   --accent-red: #ff4d6d;
   --accent-orange: #ff9500;
+  --accent-yellow: #ffd60a;
+  --accent-blue: #3498db;
+
+  /* Text */
   --text-primary: #e8f4ff;
   --text-secondary: #7ea8d4;
+  --text-muted: #c8e0f4;
+
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-cyan: rgba(0, 212, 255, 0.4);
+  --border-cyan-dim: rgba(0, 212, 255, 0.2);
+  --border-cyan-faint: rgba(0, 212, 255, 0.25);
+  --border-white-faint: rgba(255, 255, 255, 0.1);
+  --border-white-subtle: rgba(255, 255, 255, 0.05);
+
+  /* Backgrounds — translucent tints */
+  --bg-cyan-tint: rgba(0, 212, 255, 0.1);
+  --bg-cyan-chip: rgba(0, 212, 255, 0.08);
+  --bg-cyan-chip-hover: rgba(0, 212, 255, 0.18);
+  --bg-white-faint: rgba(255, 255, 255, 0.05);
+  --bg-user-bubble: rgba(0, 212, 255, 0.2);
+
+  /* Glows / shadows */
   --glow-green: 0 0 20px rgba(0, 255, 136, 0.4);
   --glow-cyan: 0 0 20px rgba(0, 212, 255, 0.4);
-  --border-subtle: rgba(255, 255, 255, 0.08);
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+  /* Typography */
   --font-main: 'Space Grotesk', 'Inter', sans-serif;
+
+  /* Gradients */
+  --gradient-bg: linear-gradient(135deg, #03050f 0%, #050d1f 50%, #020810 100%);
+  --gradient-cta: linear-gradient(135deg, #00d4ff, #00ff88);
 }
 
 html, body, #root {

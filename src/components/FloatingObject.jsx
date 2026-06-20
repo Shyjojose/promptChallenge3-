@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useMemo } from 'react'
+import { useRef, useState, useEffect, useMemo, Component } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useGLTF, Html } from '@react-three/drei'
 import { RigidBody } from '@react-three/rapier'
@@ -12,6 +12,32 @@ import ProceduralLaptop from './ProceduralLaptop'
 const FALLBACK_GEO = new THREE.SphereGeometry(0.8, 16, 16)
 const FALLBACK_MAT = new THREE.MeshStandardMaterial({ color: '#ff0055' })
 
+// M3 FIX: Error boundary wrapping GLBModel so a missing or malformed .glb
+// file cannot crash the entire Canvas (previously an unhandled throw would
+// propagate up and kill the whole React tree, including the 3D scene).
+class GLBErrorBoundary extends Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+
+  componentDidCatch(error) {
+    console.warn('[GLBErrorBoundary] Failed to load model:', error.message)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      // Render a simple fallback sphere so the physics body still exists
+      return <mesh geometry={FALLBACK_GEO} material={FALLBACK_MAT} />
+    }
+    return this.props.children
+  }
+}
+
 function GLBModel({ modelPath, color, baseScale = 1.5 }) {
   const { scene } = useGLTF(modelPath)
   const clonedScene = useMemo(() => scene.clone(), [scene])
@@ -20,7 +46,9 @@ function GLBModel({ modelPath, color, baseScale = 1.5 }) {
 }
 
 export default function FloatingObject({
-  id, modelPath, label, color, position, impulse, scale = 1.5, isActive, onClick,
+  // M2 FIX: `collider` now comes from the OBJECTS data in Scene.jsx instead
+  // of being derived from a hard-coded JSX ternary checking id values.
+  id, modelPath, label, color, position, impulse, scale = 1.5, collider = 'ball', isActive, onClick,
 }) {
   const rigidRef = useRef()
   const meshGroupRef = useRef()
@@ -54,7 +82,7 @@ export default function FloatingObject({
     <RigidBody
       ref={rigidRef}
       position={position}
-      colliders={id === 'ac_unit' || id === 'car' || id === 'laptop' ? 'cuboid' : 'ball'}
+      colliders={collider}
       linearDamping={0}
       angularDamping={0}
       restitution={1.0}
@@ -91,11 +119,15 @@ export default function FloatingObject({
           ) : id === 'laptop' ? (
             <ProceduralLaptop scale={scale} />
           ) : (
-            <GLBModel modelPath={modelPath} color={color} baseScale={scale} />
+            // M3 FIX: Wrapped in GLBErrorBoundary — a bad model URL now
+            // renders a fallback sphere instead of crashing the whole scene.
+            <GLBErrorBoundary>
+              <GLBModel modelPath={modelPath} color={color} baseScale={scale} />
+            </GLBErrorBoundary>
           )}
         </group>
 
-        {/* Floating label */}
+        {/* Floating label — uses CSS vars via inline style in Html overlay */}
         <Html
           position={[0, 1.5, 0]}
           center
@@ -111,7 +143,7 @@ export default function FloatingObject({
             borderRadius: '8px',
             padding: '4px 12px',
             color: color,
-            fontFamily: 'Space Grotesk, sans-serif',
+            fontFamily: 'var(--font-main)',
             fontSize: '13px',
             fontWeight: '600',
             whiteSpace: 'nowrap',

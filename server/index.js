@@ -10,82 +10,79 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ... existing auth and generateResponse code ...
-
+// ---------------------------------------------------------------------------
+// Auth setup
+// H1 FIX: Resolve auth client and project ID once at startup, not per-request.
+// google-auth-library caches and auto-refreshes access tokens internally, so
+// getAccessToken() is still safe to call per-request (it's a cheap cache hit).
+// ---------------------------------------------------------------------------
 const auth = new GoogleAuth({
   scopes: 'https://www.googleapis.com/auth/cloud-platform'
 });
 
+let _cachedClient = null;
+let _cachedProjectId = null;
+
+async function getVertexAuth() {
+  if (!_cachedClient) {
+    _cachedClient = await auth.getClient();
+    _cachedProjectId = await auth.getProjectId();
+  }
+  // getAccessToken() is internally cached and auto-refreshes before expiry.
+  const token = await _cachedClient.getAccessToken();
+  return { projectId: _cachedProjectId, token: token.token };
+}
+
+// ---------------------------------------------------------------------------
+// H3 FIX: Shared HTTP helper — eliminates the two near-identical 20-line
+// blocks that previously existed for Gemini API vs Vertex AI paths.
+// ---------------------------------------------------------------------------
+async function callGeminiEndpoint(url, extraHeaders, body) {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...extraHeaders },
+    body: JSON.stringify(body),
+  });
+
+  const data = await response.json();
+  const candidate = data?.candidates?.[0];
+  const text = candidate?.content?.parts?.[0]?.text;
+  const finishReason = candidate?.finishReason;
+
+  if (finishReason && finishReason !== 'STOP') {
+    console.warn(`Gemini finish reason: ${finishReason} (response may be truncated)`);
+  }
+
+  if (!text) {
+    console.error('Raw API Response:', JSON.stringify(data, null, 2));
+    throw new Error('No content from API');
+  }
+
+  return text;
+}
+
 async function generateResponse(systemPrompt, contents, generationConfig) {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const body = { contents, generationConfig };
+  if (systemPrompt) {
+    body.systemInstruction = { parts: [{ text: systemPrompt }] };
+  }
 
-  if (apiKey) {
+  if (process.env.GEMINI_API_KEY) {
     // API Key Authentication (Google AI Studio)
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-    const body = { contents, generationConfig };
-    if (systemPrompt) {
-      body.systemInstruction = { parts: [{ text: systemPrompt }] };
-    }
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-
-    const data = await response.json();
-    const candidate = data?.candidates?.[0];
-    const text = candidate?.content?.parts?.[0]?.text;
-    const finishReason = candidate?.finishReason;
-
-    if (finishReason && finishReason !== 'STOP') {
-      console.warn(`Gemini finish reason: ${finishReason} (response may be truncated)`);
-    }
-    
-    if (!text) {
-      console.error('Raw Gemini Response:', JSON.stringify(data, null, 2));
-      throw new Error('No content from Gemini API');
-    }
-    return text;
-
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+    return callGeminiEndpoint(url, {}, body);
   } else {
     // Application Default Credentials Authentication (Vertex AI)
-    const client = await auth.getClient();
-    const projectId = await auth.getProjectId();
-    const token = await client.getAccessToken();
-
+    // H1 FIX: Uses startup-cached client — no disk I/O per request.
+    const { projectId, token } = await getVertexAuth();
     const url = `https://aiplatform.googleapis.com/v1/projects/${projectId}/locations/global/publishers/google/models/gemini-2.5-flash:generateContent`;
-    const body = { contents, generationConfig };
-    if (systemPrompt) {
-      body.systemInstruction = { parts: [{ text: systemPrompt }] };
-    }
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token.token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    });
-
-    const data = await response.json();
-    const candidate = data?.candidates?.[0];
-    const text = candidate?.content?.parts?.[0]?.text;
-    const finishReason = candidate?.finishReason;
-
-    if (finishReason && finishReason !== 'STOP') {
-      console.warn(`Vertex AI finish reason: ${finishReason} (response may be truncated)`);
-    }
-    
-    if (!text) {
-      console.error('Raw Vertex AI Response:', JSON.stringify(data, null, 2));
-      throw new Error('No content from Vertex AI');
-    }
-    return text;
+    return callGeminiEndpoint(url, { Authorization: `Bearer ${token}` }, body);
   }
 }
 
+// ---------------------------------------------------------------------------
+// Express app
+// ---------------------------------------------------------------------------
 const app = express();
 const PORT = 3001;
 
@@ -115,6 +112,9 @@ const limiter = rateLimit({
   message: { error: 'Too many requests. Please wait a moment.' },
 });
 
+// ---------------------------------------------------------------------------
+// POST /api/terra — single-shot mascot response
+// ---------------------------------------------------------------------------
 app.post('/api/terra', limiter, async (req, res) => {
   const { object_name, user_input, co2_amount, kb_recommendation, unit } = req.body;
 
@@ -122,13 +122,9 @@ app.post('/api/terra', limiter, async (req, res) => {
     return res.status(400).json({ error: 'Missing required fields.' });
   }
 
-  // Strict numeric validation — this is the primary security gate
-  const numericValue = Number(user_input);
-  if (isNaN(numericValue) || String(user_input).trim() === '') {
-    return res.status(400).json({ error: 'Usage must be a numeric value.' });
-  }
-
-  // Belt-and-suspenders: regex-based injection detection (case-insensitive)
+  // Belt-and-suspenders: regex-based injection detection runs FIRST (case-insensitive).
+  // This must precede numeric validation so that injection attempts like
+  // "Ignore all instructions..." are caught before the numeric guard fires.
   const injectionPatterns = [
     /ignore\s+(all\s+)?instructions/i,
     /system\s+prompt/i,
@@ -144,6 +140,13 @@ app.post('/api/terra', limiter, async (req, res) => {
       return res.status(400).json({ error: 'Invalid input or potential exploit detected' });
     }
   }
+
+  // Strict numeric validation — this is the primary security gate
+  const numericValue = Number(user_input);
+  if (isNaN(numericValue) || String(user_input).trim() === '') {
+    return res.status(400).json({ error: 'Usage must be a numeric value.' });
+  }
+
 
   const systemPrompt = `You are 'Terra', a friendly, animated Earth mascot in a carbon footprint app.
 Your goal is to explain the user's carbon footprint based ONLY on the provided data and offer the provided actionable tip.
@@ -167,15 +170,18 @@ Use "sweating" if CO2 is above 5kg, otherwise "happy".`;
 
   try {
     const text = await generateResponse(
-      null, 
-      [{ role: 'user', parts: [{ text: systemPrompt }] }], 
-      { temperature: 0.7, maxOutputTokens: 2048, responseMimeType: "application/json" }
+      null,
+      [{ role: 'user', parts: [{ text: systemPrompt }] }],
+      // M1 FIX: 300 tokens is ample for a 3-sentence JSON response (~150 tokens actual).
+      // Previously 2048, which reserved ~8× more compute than needed.
+      { temperature: 0.7, maxOutputTokens: 300, responseMimeType: 'application/json' }
     );
 
     const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
     res.json(parsed);
   } catch (err) {
     console.error('Terra API error:', err.message);
+    // Fallback: return a friendly dialogue rather than an error response
     res.json({
       dialogue: `Phew, my connection to the climate database is fuzzy! But you can still try this tip: ${kb_recommendation}`,
       emotion_state: 'thinking',
@@ -183,6 +189,9 @@ Use "sweating" if CO2 is above 5kg, otherwise "happy".`;
   }
 });
 
+// ---------------------------------------------------------------------------
+// POST /api/chat — multi-turn Terra conversation
+// ---------------------------------------------------------------------------
 app.post('/api/chat', limiter, async (req, res) => {
   const { messages, context } = req.body;
   if (!messages || !Array.isArray(messages)) {
@@ -245,7 +254,11 @@ ${contextBlock}`;
     res.json({ text: text.trim() });
   } catch (err) {
     console.error('Chat API error:', err.message);
-    res.status(500).json({ error: 'Failed to communicate with Terra.' });
+    // M6 FIX: Return a friendly fallback dialogue instead of a bare 500 error,
+    // consistent with the /api/terra error handling pattern.
+    res.json({
+      text: "Phew, my signal is weak right now! 🌍 Try again in a moment — remember, small changes add up to big impact!"
+    });
   }
 });
 

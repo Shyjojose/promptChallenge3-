@@ -7,22 +7,32 @@ const MASCOT_IMAGES = {
   thinking: '/images/earth_thinking.webp',
 }
 
+// L1 FIX: Replaced setInterval with a recursive setTimeout approach.
+// setInterval doesn't sync to the browser paint cycle; recursive setTimeout
+// yields control back to the event loop between characters, producing smoother
+// rendering in animation-heavy WebGL pages.
 function TypewriterText({ text }) {
   const [displayed, setDisplayed] = useState('')
+  const indexRef = useRef(0)
+  const timerRef = useRef(null)
 
   useEffect(() => {
+    // Reset on new text
     setDisplayed('')
+    indexRef.current = 0
+
     if (!text) return
-    let i = 0
-    const interval = setInterval(() => {
-      if (i < text.length) {
-        setDisplayed(text.slice(0, i + 1))
-        i++
-      } else {
-        clearInterval(interval)
+
+    const tick = () => {
+      if (indexRef.current < text.length) {
+        indexRef.current += 1
+        setDisplayed(text.slice(0, indexRef.current))
+        timerRef.current = setTimeout(tick, 22)
       }
-    }, 22)
-    return () => clearInterval(interval)
+    }
+
+    timerRef.current = setTimeout(tick, 22)
+    return () => clearTimeout(timerRef.current)
   }, [text])
 
   return <span>{displayed}</span>
@@ -55,16 +65,17 @@ export default function Mascot({ emotion, dialogue, onDismiss }) {
               transition={{ duration: 0.3, ease: 'easeOut' }}
               style={{
                 maxWidth: '280px',
-                background: 'rgba(3, 5, 15, 0.92)',
-                border: '1px solid rgba(0, 212, 255, 0.3)',
+                // H4 FIX: CSS vars throughout
+                background: 'var(--bg-overlay-light)',
+                border: '1px solid var(--border-cyan-dim)',
                 borderRadius: '16px 16px 4px 16px',
                 padding: '14px 16px',
-                color: '#e8f4ff',
-                fontFamily: 'Space Grotesk, sans-serif',
+                color: 'var(--text-primary)',
+                fontFamily: 'var(--font-main)',
                 fontSize: '14px',
                 lineHeight: '1.5',
                 backdropFilter: 'blur(20px)',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 20px rgba(0,212,255,0.1)',
+                boxShadow: 'var(--shadow-card), var(--glow-cyan)',
                 pointerEvents: 'all',
               }}
             >
@@ -75,9 +86,9 @@ export default function Mascot({ emotion, dialogue, onDismiss }) {
                   display: 'block',
                   marginTop: '8px',
                   background: 'transparent',
-                  border: '1px solid rgba(0,212,255,0.4)',
+                  border: '1px solid var(--border-cyan)',
                   borderRadius: '6px',
-                  color: '#00d4ff',
+                  color: 'var(--accent-cyan)',
                   fontSize: '12px',
                   padding: '3px 10px',
                   cursor: 'pointer',
